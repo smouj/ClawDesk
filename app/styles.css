@@ -145,6 +145,14 @@ body {
   gap: 28px;
 }
 
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -342,6 +350,10 @@ body {
   gap: 6px;
   max-height: 160px;
   overflow-y: auto;
+}
+
+.settings-card p {
+  margin: 8px 0;
 }
 
 .wizard {

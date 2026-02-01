@@ -1,64 +1,72 @@
 # ClawDesk
-ClawDesk 🦞 — un panel web moderno, sencillo y profesional para gestionar agentes de OpenClaw.
+ClawDesk 🦞 — un panel web moderno, seguro y real para gestionar OpenClaw desde tu máquina local.
 
-## ✨ Qué incluye
-- Dashboard estilo “Mission Control” con tarjetas de estado, acciones rápidas y lista de agentes.
-- Connection Wizard visual (detección de OpenClaw, gateway, token y test OK).
-- UI moderna: tema oscuro por defecto, acento rojo/neón, badges, micro-animaciones y skeleton-ready.
-- Modo “Local-only” por defecto (127.0.0.1) y advertencias de seguridad integradas.
-- Instalador guiado paso a paso con configuración de puerto, gateway y rutas.
-- GitHub Pages listo con `docs/` para el “homeboard”.
+> ⚠️ **Seguridad primero**: ClawDesk solo escucha en `127.0.0.1` por defecto. No expongas el dashboard directamente a internet. Para acceso remoto, usa túneles cifrados (Tailscale/WireGuard/SSH tunneling).
+
+## ✨ Qué incluye (v1.1.0)
+- **Daemon local** (Node + Express) que sirve la UI y expone `/api/*`.
+- **Acciones reales** contra OpenClaw (agents/skills/logs/status).
+- **Auth local para API** con secret almacenado en `~/.config/clawdesk/secret` (chmod 600).
+- **Support Bundle** descargable con información redactada.
+- **Wizard real** que detecta OpenClaw, gateway, token y test.
+- **UI dark + acento neón** sin romper la estética actual.
+- **Docs sincronizadas** desde `app/` con `scripts/sync-docs.sh`.
 
 ## 🧭 Instalación (one command)
-> **Seguridad primero**: ClawDesk solo se enlaza a `127.0.0.1` por defecto. No expongas el dashboard a internet abierto.
-
 ```bash
 bash install.sh
 ```
 
 El instalador:
 1. Detecta el sistema (Linux/WSL).
-2. Copia el dashboard localmente.
-3. Configura puerto, URL del gateway y ruta del token.
-4. Crea el comando `clawdesk`.
+2. Copia `app/` y `server/` a `~/.clawdesk`.
+3. Configura `config.json` en `~/.config/clawdesk`.
+4. Instala dependencias Node.js.
+5. Crea el comando `clawdesk`.
 
-### Ejecutar
+## ▶️ Ejecutar
 ```bash
 clawdesk run
 ```
 
-## 📦 Uso rápido
-- `clawdesk run` → sirve el panel en `http://127.0.0.1:<puerto>`
-- `clawdesk open` → imprime el enlace local
-- `clawdesk config` → muestra el `config.yaml`
-- `clawdesk doctor` → diagnóstico rápido (token, puerto, openclaw, gateway)
-- `clawdesk bundle` → genera un soporte con config saneada
-- `clawdesk uninstall` → desinstala archivos locales
+## 📦 Comandos disponibles
+- `clawdesk run` → inicia el daemon en `http://127.0.0.1:<puerto>`.
+- `clawdesk status` → estado del daemon + ping a `/api/health`.
+- `clawdesk stop` → detiene el daemon.
+- `clawdesk open` → imprime la URL local.
+- `clawdesk config` → muestra el `config.json`.
+- `clawdesk doctor` → diagnóstico local (OpenClaw, token, puerto, gateway).
+- `clawdesk uninstall` → desinstala archivos locales.
 
 ## 🔒 Seguridad
-- `config.yaml` se crea con permisos `600`.
-- Tokens no se guardan en texto plano dentro del dashboard.
-- Allow-commands permite solo comandos explícitos del backend.
-⚠️ Si estás en WSL, recuerda que `localhost` es compartido con Windows.
-
-Si necesitas acceso remoto, usa **túneles cifrados** (Tailscale/WireGuard/SSH tunneling) en lugar de abrir puertos públicos.
-
-## 🧩 GitHub Pages
-El contenido está listo en `docs/`. Para publicar:
-1. Activa GitHub Pages desde la carpeta `/docs`.
-2. Accede a tu homeboard desde la URL de Pages.
+- **No comandos arbitrarios**: se usan `allow_actions` (acciones semánticas).
+- **Exec seguro**: `openclaw` se ejecuta con `execFile` y `shell=false`.
+- **Auth local**: la API exige `Authorization: Bearer <secret>`.
+- **Headers**: CSP y `helmet` para protección básica.
+- **Redacción**: support bundle elimina tokens/secretos.
 
 ## 🗂️ Estructura del repo
 ```
-app/          # Dashboard local
-config/       # Plantillas de config
-docs/         # Homeboard para GitHub Pages
-install.sh    # Instalador guiado
+app/          # UI local (source of truth)
+server/       # daemon Node.js + API
+config/       # plantilla config.json
+scripts/      # utilidades (sync docs)
+docs/         # homeboard para GitHub Pages (generado)
 ```
 
-## ✅ Roadmap sugerido
-- v1.1.0: Wizard UI + agents search/filtro + logs export
-- v1.2.0: Skills Manager + perfiles + auto-update
+## 🧪 Desarrollo
+Sincroniza docs desde la UI:
+```bash
+./scripts/sync-docs.sh
+```
+
+## 🧰 Troubleshooting rápido
+- **OpenClaw no detectado**: asegúrate de que `openclaw` esté en PATH.
+- **Token ausente**: revisa `gateway.auth.token` o exporta `OPENCLAW_GATEWAY_TOKEN`.
+- **Puerto ocupado**: cambia el puerto en `config.json` y reinicia.
+
+## 📣 Release
+- Revisa `CHANGELOG.md` para los cambios de v1.1.0.
 
 ---
-¿Quieres que conectemos el backend real de OpenClaw o el SDK de OpenClaw Gateway? Abrimos una issue y lo integramos con seguridad.
+¿Necesitas acceso remoto? Usa **túneles cifrados** (Tailscale/WireGuard/SSH). Nunca abras el puerto del dashboard en el router.
