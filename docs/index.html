@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClawDesk · Mission Control</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="theme-dark">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">🦞</div>
+          <div class="brand-text">
+            <span>ClawDesk</span>
+            <small>OpenClaw Mission Control</small>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="agents">Agents</button>
+          <button class="nav-item" data-view="skills">Skills</button>
+          <button class="nav-item" data-view="logs">Logs</button>
+          <button class="nav-item" data-view="settings">Settings</button>
+        </nav>
+        <div class="profile-switch">
+          <p>Perfil</p>
+          <div class="toggle">
+            <button class="toggle-btn active" data-profile="operator">Human Operator</button>
+            <button class="toggle-btn" data-profile="builder">Agent Builder</button>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <button class="ghost-btn" id="launch-wizard">Connection Wizard</button>
+          <button class="ghost-btn" id="support-bundle">Generate Support Bundle</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <h1>ClawDesk Homeboard</h1>
+            <p>Instala y conecta tu dashboard de OpenClaw en minutos.</p>
+          </div>
+          <div class="topbar-actions">
+            <button class="primary">Install</button>
+            <button class="secondary">Docs</button>
+          </div>
+        </header>
+
+        <section class="card">
+          <div class="card-header">
+            <h3>Instalación en un comando</h3>
+            <span class="badge ok">Local-only</span>
+          </div>
+          <p>Ejecuta el instalador guiado y abre el panel en tu máquina:</p>
+          <pre class="code-block">bash install.sh</pre>
+          <div class="card-actions">
+            <button class="mini">Guía paso a paso</button>
+            <button class="mini">Ver requisitos</button>
+          </div>
+        </section>
+
+        <section class="status-grid">
+          <article class="card status-card">
+            <div class="card-header">
+              <h3>Gateway</h3>
+              <span class="badge ok">UP</span>
+            </div>
+            <p>Latencia: <strong id="latency">18ms</strong></p>
+            <p>Última actividad: <strong id="last-activity">hace 2 min</strong></p>
+            <div class="card-actions">
+              <button class="mini">Start</button>
+              <button class="mini">Stop</button>
+              <button class="mini">Restart</button>
+            </div>
+          </article>
+          <article class="card status-card">
+            <div class="card-header">
+              <h3>Agentes activos</h3>
+              <span class="badge warn">6</span>
+            </div>
+            <p>War Room: 2 sesiones</p>
+            <p>Alertas críticas: 0</p>
+            <div class="card-actions">
+              <button class="mini">War Room</button>
+              <button class="mini">Playbooks</button>
+            </div>
+          </article>
+          <article class="card status-card">
+            <div class="card-header">
+              <h3>Seguridad</h3>
+              <span class="badge ok">Local-only</span>
+            </div>
+            <p>Token cifrado: <strong>Activo</strong></p>
+            <p>Allow-commands: <strong>12 reglas</strong></p>
+            <div class="card-actions">
+              <button class="mini">Revisar</button>
+              <button class="mini">Fix common issues</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Security Center</h2>
+            <p>Hardening activo + acceso remoto seguro sin exponer tu host.</p>
+          </div>
+          <div class="security-grid">
+            <article class="card">
+              <div class="card-header">
+                <h3>Modo local-only</h3>
+                <span class="badge ok">127.0.0.1</span>
+              </div>
+              <p>El dashboard solo escucha en la interfaz local. ✅</p>
+              <p class="muted">Si necesitas acceso remoto, usa túneles cifrados.</p>
+            </article>
+            <article class="card">
+              <div class="card-header">
+                <h3>Remote Access (Seguro)</h3>
+                <span class="badge">Túneles</span>
+              </div>
+              <p>Recomendado: Tailscale · WireGuard · SSH Tunneling.</p>
+              <div class="card-actions">
+                <button class="mini">Guía Tailscale</button>
+                <button class="mini">Guía SSH</button>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-header">
+                <h3>Allow-Commands</h3>
+                <span class="badge ok">Estricto</span>
+              </div>
+              <p>Solo comandos listados en la allow-list.</p>
+              <div class="card-actions">
+                <button class="mini">Revisar reglas</button>
+                <button class="mini">Aplicar hardening</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Agentes</h2>
+            <div class="filters">
+              <input type="search" placeholder="Buscar por nombre, tag o rol..." />
+              <select>
+                <option>Estado: todos</option>
+                <option>OK</option>
+                <option>WARN</option>
+                <option>ERROR</option>
+              </select>
+              <select>
+                <option>Tags</option>
+                <option>prod</option>
+                <option>test</option>
+                <option>war-room</option>
+              </select>
+            </div>
+          </div>
+          <div class="agent-grid">
+            <article class="card agent-card">
+              <div class="agent-title">
+                <div class="avatar neon">C</div>
+                <div>
+                  <h3>Coder Atlas</h3>
+                  <p>Preset: Coder · Tags: prod</p>
+                </div>
+              </div>
+              <div class="agent-meta">
+                <span class="badge ok">OK</span>
+                <span class="badge">Tools: 7</span>
+              </div>
+              <div class="card-actions">
+                <button class="mini">Clone</button>
+                <button class="mini">Edit</button>
+                <button class="mini">Logs</button>
+              </div>
+            </article>
+            <article class="card agent-card">
+              <div class="agent-title">
+                <div class="avatar pink">N</div>
+                <div>
+                  <h3>News Pulse</h3>
+                  <p>Preset: News · Tags: test</p>
+                </div>
+              </div>
+              <div class="agent-meta">
+                <span class="badge warn">WARN</span>
+                <span class="badge">Skills: 4</span>
+              </div>
+              <div class="card-actions">
+                <button class="mini">Clone</button>
+                <button class="mini">Edit</button>
+                <button class="mini">Logs</button>
+              </div>
+            </article>
+            <article class="card agent-card">
+              <div class="agent-title">
+                <div class="avatar blue">O</div>
+                <div>
+                  <h3>Ops Sentinel</h3>
+                  <p>Preset: Ops · Tags: war-room</p>
+                </div>
+              </div>
+              <div class="agent-meta">
+                <span class="badge ok">OK</span>
+                <span class="badge">Skills: 5</span>
+              </div>
+              <div class="card-actions">
+                <button class="mini">Clone</button>
+                <button class="mini">Edit</button>
+                <button class="mini">Logs</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Observabilidad</h2>
+            <p>Logs en vivo, filtros y soporte rápido.</p>
+          </div>
+          <div class="card log-card">
+            <div class="filters">
+              <select>
+                <option>Nivel: todos</option>
+                <option>INFO</option>
+                <option>WARN</option>
+                <option>ERROR</option>
+              </select>
+              <select>
+                <option>Módulo: todos</option>
+                <option>gateway</option>
+                <option>agent</option>
+                <option>skills</option>
+              </select>
+              <input type="search" placeholder="Buscar en logs..." />
+            </div>
+            <div class="log-stream">
+              <p>[INFO] gateway · Status OK · 09:42:12</p>
+              <p>[WARN] agent:news-pulse · Token próximo a expirar</p>
+              <p>[INFO] skills · 4 skills activas</p>
+            </div>
+            <div class="card-actions">
+              <button class="mini">Export logs</button>
+              <button class="mini">Generate Support Bundle</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Connection Wizard</h2>
+            <p>Onboarding guiado con detección automática.</p>
+          </div>
+          <div class="wizard">
+            <div class="wizard-step">
+              <span class="step-badge">1</span>
+              <div>
+                <h4>Detectar OpenClaw</h4>
+                <p id="detect-openclaw">Buscando instalación local...</p>
+              </div>
+            </div>
+            <div class="wizard-step">
+              <span class="step-badge">2</span>
+              <div>
+                <h4>Gateway + URL sugerida</h4>
+                <p id="detect-gateway">Sugerencia: http://127.0.0.1:18789</p>
+              </div>
+            </div>
+            <div class="wizard-step">
+              <span class="step-badge">3</span>
+              <div>
+                <h4>Token seguro</h4>
+                <p id="detect-token">Ruta detectada: ~/.config/openclaw/gateway.auth.token</p>
+              </div>
+            </div>
+            <div class="wizard-step">
+              <span class="step-badge">4</span>
+              <div>
+                <h4>Test OK</h4>
+                <p id="detect-test">Conexión validada.</p>
+              </div>
+            </div>
+            <button class="primary" id="launch-dashboard">Launch Dashboard</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="wizard-modal" aria-hidden="true">
+      <div class="modal-content">
+        <header>
+          <h2>Connection Wizard</h2>
+          <button class="ghost-btn" id="close-wizard">Cerrar</button>
+        </header>
+        <ol class="modal-steps">
+          <li><strong>Detectar OpenClaw</strong> · Versión: <span id="modal-openclaw">2.3.1</span></li>
+          <li><strong>Detectar Gateway</strong> · URL: <span id="modal-gateway">http://127.0.0.1:18789</span></li>
+          <li><strong>Token seguro</strong> · Ruta: <span id="modal-token">~/.config/openclaw/gateway.auth.token</span></li>
+          <li><strong>Test</strong> · Estado: <span class="badge ok">OK</span></li>
+        </ol>
+        <button class="primary" id="confirm-wizard">Launch Dashboard</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

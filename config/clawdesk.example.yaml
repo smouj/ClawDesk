@@ -1,0 +1,25 @@
+configVersion: 1
+app:
+  host: 127.0.0.1
+  port: 4178
+  theme: dark
+gateway:
+  url: http://127.0.0.1:18789
+  token_path: ~/.config/openclaw/gateway.auth.token
+security:
+  token_storage: keyring
+  allow_commands:
+    - openclaw --version
+    - openclaw gateway status
+    - openclaw gateway logs --tail 200
+    - openclaw agent list
+    - openclaw agent start
+    - openclaw agent stop
+    - openclaw agent restart
+    - openclaw agent clone
+    - openclaw skills list
+    - openclaw skills enable
+    - openclaw skills disable
+observability:
+  log_poll_ms: 1500
+  backoff_max_ms: 8000
