@@ -246,6 +246,10 @@ body {
   margin-top: 12px;
 }
 
+.muted {
+  color: var(--muted);
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -313,6 +317,31 @@ body {
   display: flex;
   gap: 8px;
   margin: 12px 0;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.log-card {
+  display: grid;
+  gap: 12px;
+}
+
+.log-stream {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
 .wizard {

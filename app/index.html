@@ -90,6 +90,45 @@
 
         <section class="panel">
           <div class="panel-header">
+            <h2>Security Center</h2>
+            <p>Hardening activo + acceso remoto seguro sin exponer tu host.</p>
+          </div>
+          <div class="security-grid">
+            <article class="card">
+              <div class="card-header">
+                <h3>Modo local-only</h3>
+                <span class="badge ok">127.0.0.1</span>
+              </div>
+              <p>El dashboard solo escucha en la interfaz local. ✅</p>
+              <p class="muted">Si necesitas acceso remoto, usa túneles cifrados.</p>
+            </article>
+            <article class="card">
+              <div class="card-header">
+                <h3>Remote Access (Seguro)</h3>
+                <span class="badge">Túneles</span>
+              </div>
+              <p>Recomendado: Tailscale · WireGuard · SSH Tunneling.</p>
+              <div class="card-actions">
+                <button class="mini">Guía Tailscale</button>
+                <button class="mini">Guía SSH</button>
+              </div>
+            </article>
+            <article class="card">
+              <div class="card-header">
+                <h3>Allow-Commands</h3>
+                <span class="badge ok">Estricto</span>
+              </div>
+              <p>Solo comandos listados en la allow-list.</p>
+              <div class="card-actions">
+                <button class="mini">Revisar reglas</button>
+                <button class="mini">Aplicar hardening</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
             <h2>Agentes</h2>
             <div class="filters">
               <input type="search" placeholder="Buscar por nombre, tag o rol..." />
@@ -162,6 +201,39 @@
                 <button class="mini">Logs</button>
               </div>
             </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Observabilidad</h2>
+            <p>Logs en vivo, filtros y soporte rápido.</p>
+          </div>
+          <div class="card log-card">
+            <div class="filters">
+              <select>
+                <option>Nivel: todos</option>
+                <option>INFO</option>
+                <option>WARN</option>
+                <option>ERROR</option>
+              </select>
+              <select>
+                <option>Módulo: todos</option>
+                <option>gateway</option>
+                <option>agent</option>
+                <option>skills</option>
+              </select>
+              <input type="search" placeholder="Buscar en logs..." />
+            </div>
+            <div class="log-stream">
+              <p>[INFO] gateway · Status OK · 09:42:12</p>
+              <p>[WARN] agent:news-pulse · Token próximo a expirar</p>
+              <p>[INFO] skills · 4 skills activas</p>
+            </div>
+            <div class="card-actions">
+              <button class="mini">Export logs</button>
+              <button class="mini">Generate Support Bundle</button>
+            </div>
           </div>
         </section>
 

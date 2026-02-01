@@ -6,7 +6,7 @@ ClawDesk 🦞 — un panel web moderno, sencillo y profesional para gestionar ag
 - Connection Wizard visual (detección de OpenClaw, gateway, token y test OK).
 - UI moderna: tema oscuro por defecto, acento rojo/neón, badges, micro-animaciones y skeleton-ready.
 - Modo “Local-only” por defecto (127.0.0.1) y advertencias de seguridad integradas.
-- Instalador guiado paso a paso con configuración de puerto y rutas.
+- Instalador guiado paso a paso con configuración de puerto, gateway y rutas.
 - GitHub Pages listo con `docs/` para el “homeboard”.
 
 ## 🧭 Instalación (one command)
@@ -19,7 +19,7 @@ bash install.sh
 El instalador:
 1. Detecta el sistema (Linux/WSL).
 2. Copia el dashboard localmente.
-3. Configura puerto y ruta del token.
+3. Configura puerto, URL del gateway y ruta del token.
 4. Crea el comando `clawdesk`.
 
 ### Ejecutar
@@ -31,11 +31,15 @@ clawdesk run
 - `clawdesk run` → sirve el panel en `http://127.0.0.1:<puerto>`
 - `clawdesk open` → imprime el enlace local
 - `clawdesk config` → muestra el `config.yaml`
+- `clawdesk doctor` → diagnóstico rápido (token, puerto, openclaw, gateway)
+- `clawdesk bundle` → genera un soporte con config saneada
+- `clawdesk uninstall` → desinstala archivos locales
 
 ## 🔒 Seguridad
 - `config.yaml` se crea con permisos `600`.
 - Tokens no se guardan en texto plano dentro del dashboard.
 - Allow-commands permite solo comandos explícitos del backend.
+⚠️ Si estás en WSL, recuerda que `localhost` es compartido con Windows.
 
 Si necesitas acceso remoto, usa **túneles cifrados** (Tailscale/WireGuard/SSH tunneling) en lugar de abrir puertos públicos.
 

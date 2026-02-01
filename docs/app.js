@@ -4,7 +4,9 @@ const wizardModal = document.getElementById("wizard-modal");
 const launchWizard = document.getElementById("launch-wizard");
 const closeWizard = document.getElementById("close-wizard");
 const confirmWizard = document.getElementById("confirm-wizard");
-const supportBundle = document.getElementById("support-bundle");
+const supportBundleButtons = document.querySelectorAll(
+  "#support-bundle, .log-card .mini:last-child"
+);
 
 navItems.forEach((item) => {
   item.addEventListener("click", () => {
@@ -34,15 +36,17 @@ launchWizard.addEventListener("click", openModal);
 closeWizard.addEventListener("click", closeModal);
 confirmWizard.addEventListener("click", closeModal);
 
-supportBundle.addEventListener("click", () => {
-  const event = new CustomEvent("clawdesk:bundle", {
-    detail: {
-      time: new Date().toISOString(),
-      status: "bundle-generated",
-    },
+supportBundleButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const event = new CustomEvent("clawdesk:bundle", {
+      detail: {
+        time: new Date().toISOString(),
+        status: "bundle-generated",
+      },
+    });
+    window.dispatchEvent(event);
+    button.textContent = "Bundle listo (descarga)";
   });
-  window.dispatchEvent(event);
-  supportBundle.textContent = "Bundle listo (descarga)";
 });
 
 window.addEventListener("clawdesk:bundle", (event) => {
