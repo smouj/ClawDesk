@@ -1,0 +1,16 @@
+{
+  "name": "clawdesk",
+  "version": "1.1.0",
+  "description": "Local Mission Control dashboard for OpenClaw",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "lint": "node --check server/index.js && node --check server/server.js && node --check server/config.js && node --check server/openclaw.js && node --check server/supportBundle.js && node --check server/smoke.js",
+    "smoke": "node server/smoke.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "tar": "^6.2.1"
+  }
+}
