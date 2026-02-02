@@ -18,6 +18,8 @@ import { loadTimeline } from "./pages/timeline.js";
 import { loadLogs } from "./pages/logs.js";
 import { initSettings } from "./pages/settings.js";
 
+const AUTO_SYNC_INTERVAL_MS = 8000;
+
 const setActivePage = (page) => {
   document.querySelectorAll(".page").forEach((section) => {
     section.classList.toggle("active", section.id === `page-${page}`);
@@ -52,6 +54,37 @@ const renderAll = (state) => {
 };
 
 subscribe(renderAll);
+
+const startAutoSync = ({ api, setState }) => {
+  let inFlight = false;
+  let timer = null;
+
+  const sync = async () => {
+    if (inFlight || document.hidden) return;
+    inFlight = true;
+    try {
+      await loadDashboard({ api, setState });
+      await loadTimeline({ api, setState });
+    } catch (error) {
+      showToast(error.message, "warn");
+    } finally {
+      inFlight = false;
+    }
+  };
+
+  const onVisibility = () => {
+    if (!document.hidden) sync();
+  };
+
+  document.addEventListener("visibilitychange", onVisibility);
+  timer = window.setInterval(sync, AUTO_SYNC_INTERVAL_MS);
+  sync();
+
+  return () => {
+    if (timer) window.clearInterval(timer);
+    document.removeEventListener("visibilitychange", onVisibility);
+  };
+};
 
 const init = async () => {
   initSettings();
@@ -315,16 +348,32 @@ const init = async () => {
   }
 
   let logSource = null;
+  let reconnectTimer = null;
+  let reconnectCount = 0;
+  const scheduleLogReconnect = (interval) => {
+    if (reconnectTimer) return;
+    const delay = Math.min(8000, 1000 * 2 ** reconnectCount);
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = null;
+      reconnectCount += 1;
+      startLogStream(interval);
+    }, delay);
+  };
   const startLogStream = (interval) => {
     logSource?.close();
+    if (reconnectTimer) {
+      window.clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
     logSource = streamLogs(
       (event, data) => {
         if (event === "logs") {
+          reconnectCount = 0;
           logLines = data.lines || [];
           if (!paused) applyLogFilter();
         }
         if (event === "error") {
-          showToast("Error al conectar logs en tiempo real", "warn");
+          scheduleLogReconnect(interval);
         }
       },
       { interval }
@@ -338,6 +387,8 @@ const init = async () => {
       startLogStream(interval);
     }
   });
+
+  startAutoSync({ api, setState });
 };
 
 init();

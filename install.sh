@@ -12,16 +12,67 @@ SECRET_FILE="$CONFIG_DIR/secret"
 PID_FILE="$CONFIG_DIR/clawdesk.pid"
 LOG_FILE="$CONFIG_DIR/clawdesk.log"
 
+USE_COLOR=1
+if [ ! -t 1 ] || [ "${NO_COLOR:-}" = "1" ]; then
+  USE_COLOR=0
+fi
+if [ "$USE_COLOR" -eq 1 ]; then
+  C_RESET="$(printf '\033[0m')"
+  C_BOLD="$(printf '\033[1m')"
+  C_DIM="$(printf '\033[2m')"
+  C_BLUE="$(printf '\033[34m')"
+  C_CYAN="$(printf '\033[36m')"
+  C_GREEN="$(printf '\033[32m')"
+  C_YELLOW="$(printf '\033[33m')"
+  C_RED="$(printf '\033[31m')"
+else
+  C_RESET=""
+  C_BOLD=""
+  C_DIM=""
+  C_BLUE=""
+  C_CYAN=""
+  C_GREEN=""
+  C_YELLOW=""
+  C_RED=""
+fi
+
+print_banner() {
+  cat <<'EOF'
+   ██████╗██╗      █████╗ ██╗    ██╗██████╗ ███████╗███████╗██╗  ██╗
+  ██╔════╝██║     ██╔══██╗██║    ██║██╔══██╗██╔════╝██╔════╝██║ ██╔╝
+  ██║     ██║     ███████║██║ █╗ ██║██║  ██║█████╗  ███████╗█████╔╝
+  ██║     ██║     ██╔══██║██║███╗██║██║  ██║██╔══╝  ╚════██║██╔═██╗
+  ╚██████╗███████╗██║  ██║╚███╔███╔╝██████╔╝███████╗███████║██║  ██╗
+   ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝
+EOF
+  printf "%sInstalador oficial · Security-first · Loopback-only%s\n" "$C_CYAN" "$C_RESET"
+}
+
 print_step() {
-  printf "\n[%s] %s\n" "$(date +"%H:%M:%S")" "$1"
+  printf "\n%s[%s]%s %s%s%s\n" "$C_DIM" "$(date +"%H:%M:%S")" "$C_RESET" "$C_BOLD" "$1" "$C_RESET"
+}
+
+print_note() {
+  printf "%s%s%s\n" "$C_BLUE" "$1" "$C_RESET"
+}
+
+print_warn() {
+  printf "%s%s%s\n" "$C_YELLOW" "$1" "$C_RESET"
+}
+
+print_error() {
+  printf "%s%s%s\n" "$C_RED" "$1" "$C_RESET" >&2
 }
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
-    echo "Falta el comando requerido: $1" >&2
+    print_error "Falta el comando requerido: $1"
     exit 1
   }
 }
+
+print_banner
+print_note "Tip: para instalar desde cero usa git clone + ./install.sh"
 
 print_step "Detectando sistema operativo"
 OS_NAME="$(uname -s)"
@@ -33,9 +84,9 @@ if grep -qi microsoft /proc/version 2>/dev/null; then
   IS_WSL=1
 fi
 
-echo "Sistema: $OS_NAME"
+print_note "Sistema: $OS_NAME"
 if [ "$IS_WSL" -eq 1 ]; then
-  echo "Entorno: WSL detectado. Recuerda que localhost es compartido con Windows."
+  print_warn "Entorno: WSL detectado. Recuerda que localhost es compartido con Windows."
 fi
 
 require_cmd node
@@ -47,28 +98,28 @@ mkdir -p "$INSTALL_DIR" "$APP_DIR" "$SERVER_DIR" "$BIN_DIR" "$CONFIG_DIR"
 USE_EXISTING_CONFIG=0
 
 if [ -f "$BIN_DIR/$APP_NAME" ]; then
-  echo "Instalación existente detectada."
-  echo "1) Actualizar"
-  echo "2) Reparar"
-  echo "3) Desinstalar"
-  echo "4) Continuar"
+  print_warn "Instalación existente detectada."
+  printf "%s1)%s Actualizar\n" "$C_CYAN" "$C_RESET"
+  printf "%s2)%s Reparar\n" "$C_CYAN" "$C_RESET"
+  printf "%s3)%s Desinstalar\n" "$C_CYAN" "$C_RESET"
+  printf "%s4)%s Continuar\n" "$C_CYAN" "$C_RESET"
   read -r -p "Selecciona una opción (1-4): " INSTALL_ACTION
   case "${INSTALL_ACTION:-4}" in
     1|2)
-      echo "Continuando con actualización/reparación..."
+      print_note "Continuando con actualización/reparación..."
       ;;
     3)
       print_step "Desinstalando"
       rm -rf "$INSTALL_DIR" "$CONFIG_DIR"
       rm -f "$BIN_DIR/$APP_NAME"
-      echo "Desinstalación completa."
+      print_note "Desinstalación completa."
       exit 0
       ;;
     4)
-      echo "Continuando..."
+      print_note "Continuando..."
       ;;
     *)
-      echo "Opción inválida." >&2
+      print_error "Opción inválida."
       exit 1
       ;;
   esac
@@ -78,11 +129,11 @@ if [ -f "$CONFIG_FILE" ]; then
   BACKUP_NAME="$CONFIG_FILE.bak-$(date +%Y%m%d%H%M%S)"
   print_step "Respaldando configuración existente"
   cp "$CONFIG_FILE" "$BACKUP_NAME"
-  echo "Backup: $BACKUP_NAME"
+  print_note "Backup: $BACKUP_NAME"
   read -r -p "¿Deseas reconfigurar ahora? (y/N): " RECONFIGURE
   if [ "${RECONFIGURE:-N}" != "y" ]; then
     USE_EXISTING_CONFIG=1
-    echo "Manteniendo configuración existente."
+    print_note "Manteniendo configuración existente."
   fi
 fi
 
@@ -440,5 +491,19 @@ esac
 SCRIPT
 chmod +x "$BIN_DIR/${APP_NAME}"
 
+PORT="4178"
+if [ -f "$CONFIG_FILE" ]; then
+  PORT="$(python3 - <<PY
+import json
+from pathlib import Path
+config = json.loads(Path("$CONFIG_FILE").read_text())
+print(config.get("app", {}).get("port", 4178))
+PY
+)"
+fi
+
 print_step "Instalación completa"
-echo "Ejecuta: ${APP_NAME} run"
+printf "\n%s%sInstalación completa%s\n" "$C_GREEN" "$C_BOLD" "$C_RESET"
+printf "%sEjecuta:%s %s run\n" "$C_CYAN" "$C_RESET" "$APP_NAME"
+printf "%sURL local:%s http://127.0.0.1:%s\n" "$C_CYAN" "$C_RESET" "$PORT"
+printf "%sConfig:%s %s\n" "$C_CYAN" "$C_RESET" "$CONFIG_FILE"
