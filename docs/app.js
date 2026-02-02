@@ -10,6 +10,7 @@ const installTitle = document.getElementById("install-title");
 const installBadge = document.getElementById("install-badge");
 const copyButton = document.getElementById("copy-command");
 const copyPayloadButton = document.getElementById("copy-payload");
+const toast = document.getElementById("toast");
 
 const baseInstaller =
   "curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash";
@@ -56,14 +57,21 @@ const updateView = () => {
 const updateSegment = (selector, key) => {
   document.querySelectorAll(selector).forEach((button) => {
     button.addEventListener("click", () => {
-      document
-        .querySelectorAll(selector)
-        .forEach((node) => node.classList.remove("active"));
+      document.querySelectorAll(selector).forEach((node) => node.classList.remove("active"));
       button.classList.add("active");
       state[key] = button.dataset[key];
       updateView();
     });
   });
+};
+
+const showToast = (message) => {
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add("active");
+  setTimeout(() => {
+    toast.classList.remove("active");
+  }, 1600);
 };
 
 updateSegment("[data-mode]", "mode");
@@ -78,12 +86,9 @@ copyButton?.addEventListener("click", async () => {
   try {
     const text = commandEl.textContent || "";
     await copyText(text);
-    copyButton.textContent = "Copied";
-    setTimeout(() => {
-      copyButton.textContent = "Copy";
-    }, 1500);
-  } catch (error) {
-    alert("No se pudo copiar.");
+    showToast("Copiado ✓");
+  } catch {
+    showToast("No se pudo copiar");
   }
 });
 
@@ -91,12 +96,9 @@ copyPayloadButton?.addEventListener("click", async () => {
   try {
     const text = payloadEl.textContent || "";
     await copyText(text);
-    copyPayloadButton.textContent = "Copied";
-    setTimeout(() => {
-      copyPayloadButton.textContent = "Copy payload";
-    }, 1500);
-  } catch (error) {
-    alert("No se pudo copiar.");
+    showToast("Payload copiado ✓");
+  } catch {
+    showToast("No se pudo copiar");
   }
 });
 

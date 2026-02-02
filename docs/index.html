@@ -3,101 +3,147 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawDesk · NeuroCircuit War-Room Edition</title>
+    <title>ClawDesk OS · Retro-OS 2000 / Cyber-Y2K Winamp Skin Edition</title>
+    <link rel="icon" href="icons/logo-brain.png" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="war-room">
-    <div class="scanlines"></div>
-    <header class="site-header">
-      <div class="brand">
-        <div>
-          <span class="brand-name">ClawDesk</span>
-          <small>NeuroCircuit War-Room Edition</small>
+  <body class="retro-os">
+    <div class="noise"></div>
+    <header class="install-header">
+      <div class="titlebar">
+        <div class="titlebar-left">
+          <img class="brand-icon" src="icons/logo-brain.png" alt="ClawDesk logo" />
+          <div>
+            <h1>ClawDesk OS Installer</h1>
+            <span>Retro-OS 2000 · Cyber-Y2K Winamp Skin Edition</span>
+          </div>
+        </div>
+        <div class="titlebar-right">
+          <div class="equalizer" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <div class="window-controls" aria-hidden="true">
+            <button class="chrome-btn" type="button">_</button>
+            <button class="chrome-btn" type="button">▢</button>
+            <button class="chrome-btn" type="button">✕</button>
+          </div>
         </div>
       </div>
-      <nav class="hud-nav">
-        <a href="#install" class="hud-link">Instalar</a>
-        <a href="#payload" class="hud-link">Payload</a>
-        <a href="#checklist" class="hud-link">Checklist</a>
-        <a href="dashboard/" class="hud-link">Dashboard demo</a>
+      <nav class="tab-strip">
+        <a class="tab" href="#install">Instalar</a>
+        <a class="tab" href="#payload">Payload</a>
+        <a class="tab" href="#safe">Safe install</a>
+        <a class="tab" href="#checklist">Checklist</a>
+        <a class="tab" href="dashboard/">Dashboard demo</a>
       </nav>
     </header>
 
-    <main>
-      <section class="hero" id="install">
-        <div class="hero-content">
-          <p class="hud-eyebrow">WAR-ROOM CONTROL</p>
-          <h1>Tactical control panel for OpenClaw.</h1>
+    <main class="install-main">
+      <section class="win hero" id="install">
+        <header class="panel-titlebar">
+          <h2>Instalador ClawDesk OS</h2>
+          <span class="badge ok">Docs-only</span>
+        </header>
+        <div class="panel-body">
           <p class="muted">
-            Esta es la landing oficial de instalación. Para el panel real ejecuta <strong>clawdesk run</strong> en tu host local.
+            Esta es la landing oficial en HTTPS. Para el panel real ejecuta
+            <strong>clawdesk run</strong> en tu host local. No hay llamadas a
+            <code>127.0.0.1</code> desde esta página.
           </p>
           <div class="selector-grid">
             <div class="segment">
-              <button class="hud-chip active" data-mode="human">Soy humano</button>
-              <button class="hud-chip" data-mode="agent">Soy un agente</button>
+              <button class="chip active" data-mode="human">Soy humano</button>
+              <button class="chip" data-mode="agent">Soy un agente</button>
             </div>
             <div class="segment">
-              <button class="hud-chip active" data-os="linux">Linux</button>
-              <button class="hud-chip" data-os="wsl">WSL2</button>
+              <button class="chip active" data-os="linux">Linux</button>
+              <button class="chip" data-os="wsl">WSL2</button>
             </div>
             <div class="segment">
-              <button class="hud-chip active" data-channel="stable">Stable</button>
-              <button class="hud-chip" data-channel="nightly">Nightly</button>
+              <button class="chip active" data-channel="stable">Stable</button>
+              <button class="chip" data-channel="nightly">Nightly</button>
             </div>
           </div>
-          <div class="hud-card">
-            <div class="hud-card-header">
+
+          <div class="win panel">
+            <header class="panel-titlebar">
               <h3 id="install-title">Instalar en 1 comando</h3>
-              <span class="hud-badge" id="install-badge">Stable</span>
+              <span class="badge" id="install-badge">Stable</span>
+            </header>
+            <div class="panel-body">
+              <div class="terminal" id="install-command"><code></code></div>
+              <div class="panel-actions">
+                <button class="btn-jelly primary" id="copy-command">Copy</button>
+                <a
+                  class="btn-jelly"
+                  id="safe-install"
+                  href="https://github.com/smouj/ClawDesk/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                  >Safe install</a
+                >
+              </div>
+              <p class="muted">Safe install usa releases oficiales + SHA256SUMS verificados.</p>
             </div>
-            <div class="terminal-block" id="install-command">
-              <code></code>
-            </div>
-            <div class="hud-actions">
-              <button class="hud-btn primary" id="copy-command">Copy</button>
-              <a class="hud-btn" id="safe-install" href="https://github.com/smouj/ClawDesk/releases" target="_blank" rel="noreferrer">Safe install</a>
-            </div>
-            <p class="muted">Safe install usa releases oficiales + SHA256SUMS.</p>
           </div>
-        </div>
-        <div class="hero-panel">
-          <div class="hud-card">
-            <h3>Ops Overview</h3>
-            <ul class="hud-list">
-              <li>Loopback-only por defecto (no expone LAN).</li>
-              <li>Allow-actions obligatorio para cualquier comando.</li>
-              <li>Logs en vivo vía SSE + redacción de secretos.</li>
-              <li>Compat total con OpenClaw Gateway.</li>
-            </ul>
-            <div class="hud-actions">
-              <a class="hud-btn" href="#checklist">Ir al checklist</a>
-            </div>
+
+          <div class="status-grid">
+            <div class="lcd">Loopback-only · 127.0.0.1</div>
+            <div class="lcd">Allow-actions requerido</div>
+            <div class="lcd">Logs SSE + redaction</div>
           </div>
         </div>
       </section>
 
-      <section class="payload" id="payload">
-        <div class="hud-card">
-          <div class="hud-card-header">
-            <h2>Payload listo para agentes</h2>
-            <span class="hud-badge">Codex / OpenClaw / Clawdbot</span>
-          </div>
-          <p class="muted">Copia y pega este payload en tu agente para instalar y devolver output.</p>
-          <div class="terminal-block" id="agent-payload">
-            <code></code>
-          </div>
-          <div class="hud-actions">
-            <button class="hud-btn primary" id="copy-payload">Copy payload</button>
+      <section class="win" id="payload">
+        <header class="panel-titlebar">
+          <h2>Payload listo para agentes</h2>
+          <span class="badge">Codex / OpenClaw / Clawdbot</span>
+        </header>
+        <div class="panel-body">
+          <p class="muted">
+            Copia y pega este payload para instalación automatizada + salida completa.
+          </p>
+          <div class="terminal" id="agent-payload"><code></code></div>
+          <div class="panel-actions">
+            <button class="btn-jelly primary" id="copy-payload">Copy payload</button>
           </div>
         </div>
       </section>
 
-      <section class="checklist" id="checklist">
-        <div class="hud-card">
-          <div class="hud-card-header">
-            <h2>Ops checklist post-install</h2>
-            <span class="hud-badge ok">Ready</span>
+      <section class="win" id="safe">
+        <header class="panel-titlebar">
+          <h2>Safe install (Release + checksum)</h2>
+          <span class="badge ok">Recomendado</span>
+        </header>
+        <div class="panel-body">
+          <p class="muted">
+            El instalador remoto descarga el tar.gz desde Releases y valida SHA256SUMS.
+          </p>
+          <div class="terminal">
+            <code
+              >curl -fsSL
+              https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh |
+              bash</code
+            >
           </div>
+          <p class="muted">
+            Para nightly: <code>CLAWDESK_CHANNEL=nightly</code>. Para fijar versión:
+            <code>CLAWDESK_VERSION=v1.2.0</code>.
+          </p>
+        </div>
+      </section>
+
+      <section class="win" id="checklist">
+        <header class="panel-titlebar">
+          <h2>Checklist post-install</h2>
+          <span class="badge ok">Ready</span>
+        </header>
+        <div class="panel-body">
           <ol class="ops-list">
             <li><code>clawdesk doctor</code> — validar gateway, token y puerto.</li>
             <li><code>clawdesk run</code> — iniciar el daemon local.</li>
@@ -109,8 +155,10 @@
     </main>
 
     <footer class="site-footer">
-      <p>ClawDesk v1.2.0 · NeuroCircuit War-Room Edition</p>
+      <p>ClawDesk v1.2.0 · ClawDesk OS Installer</p>
     </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="app.js"></script>
   </body>

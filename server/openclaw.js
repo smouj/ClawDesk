@@ -12,7 +12,7 @@ const findExecutable = (binary) => {
     try {
       fs.accessSync(fullPath, fs.constants.X_OK);
       return fullPath;
-    } catch (error) {
+    } catch {
       continue;
     }
   }
@@ -45,8 +45,8 @@ const runOpenClaw = (args, { env = {}, timeout = 15000, maxBuffer = 512 * 1024, 
         maxBuffer,
         env: {
           ...process.env,
-          ...env
-        }
+          ...env,
+        },
       },
       (error, stdout, stderr) => {
         if (error) {
@@ -72,8 +72,11 @@ const parseListOutput = (raw) => {
       return json;
     }
     return [json];
-  } catch (error) {
-    return trimmed.split("\n").map((line) => line.trim()).filter(Boolean);
+  } catch {
+    return trimmed
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
   }
 };
 

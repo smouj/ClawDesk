@@ -8,7 +8,8 @@ const {
   loadConfig,
   ensureSecret,
   resolveGatewayConfig,
-  rotateSecret
+  rotateSecret,
+  redactText,
 } = require("./config");
 const { runOpenClaw, parseListOutput, resolveOpenClawBinary } = require("./openclaw");
 const { writeSupportBundle } = require("./supportBundle");
@@ -19,6 +20,7 @@ const allowedActions = new Set([
   "gateway.status",
   "gateway.logs",
   "gateway.probe",
+  "gateway.dashboard",
   "gateway.start",
   "gateway.stop",
   "gateway.restart",
@@ -30,7 +32,7 @@ const allowedActions = new Set([
   "skills.enable",
   "skills.disable",
   "support.bundle",
-  "secret.rotate"
+  "secret.rotate",
 ]);
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -68,13 +70,18 @@ const createServer = () => {
           imgSrc: ["'self'", "data:"],
           objectSrc: ["'none'"],
           scriptSrc: ["'self'"],
-          styleSrc: ["'self'", "'unsafe-inline'"]
-        }
+          styleSrc: ["'self'", "'unsafe-inline'"],
+        },
       },
-      crossOriginResourcePolicy: { policy: "same-origin" }
+      crossOriginResourcePolicy: { policy: "same-origin" },
     })
   );
   app.use(express.json({ limit: "128kb" }));
+  app.use((req, res, next) => {
+    req.setTimeout(15_000);
+    res.setTimeout(15_000);
+    next();
+  });
 
   app.use((req, res, next) => {
     const hostHeader = req.hostname;
@@ -88,7 +95,7 @@ const createServer = () => {
         if (!isLoopbackHost(originHost)) {
           return res.status(403).json({ error: "Origen no permitido" });
         }
-      } catch (error) {
+      } catch {
         return res.status(403).json({ error: "Origen inválido" });
       }
     }
@@ -165,7 +172,7 @@ const createServer = () => {
     res.json({
       app: {
         host: config.app.host,
-        port: config.app.port
+        port: config.app.port,
       },
       gateway: {
         url: gatewayConfig.url,
@@ -174,9 +181,9 @@ const createServer = () => {
         token_path: config.gateway.token_path,
         token_present: tokenPresent,
         token_source: gatewayConfig.tokenSource,
-        port_source: gatewayConfig.portSource
+        port_source: gatewayConfig.portSource,
       },
-      allow_actions: Array.from(allowList)
+      allow_actions: Array.from(allowList),
     });
   });
 
@@ -197,24 +204,29 @@ const createServer = () => {
     try {
       const { stdout } = await runOpenClaw(["gateway", "status"], { env: getOpenclawEnv() });
       res.json({ status: stdout.trim() });
-    } catch (error) {
+    } catch {
       try {
         const { stdout } = await runOpenClaw(["status", "--all"], { env: getOpenclawEnv() });
         res.json({ status: stdout.trim(), fallback: true });
       } catch (fallbackError) {
-        res.status(503).json({ error: "No se pudo obtener estado del gateway", detail: fallbackError.message });
+        res
+          .status(503)
+          .json({ error: "No se pudo obtener estado del gateway", detail: fallbackError.message });
       }
     }
   });
 
   app.get("/api/gateway/control-url", apiAuth, rateLimit, async (req, res) => {
+    if (!requireAction("gateway.dashboard")) {
+      return res.status(403).json({ error: "Acción no permitida" });
+    }
     const gatewayConfig = getGatewayConfig();
     const fallbackUrl = `http://${gatewayConfig.bind}:${gatewayConfig.port}/`;
     try {
       const { stdout } = await runOpenClaw(["dashboard"], { env: getOpenclawEnv() });
       const match = stdout.match(/https?:\/\/[^\s]+/i);
       res.json({ url: match ? match[0] : fallbackUrl, fallback: !match });
-    } catch (error) {
+    } catch {
       res.json({ url: fallbackUrl, fallback: true });
     }
   });
@@ -291,9 +303,19 @@ const createServer = () => {
     }
     const tail = clamp(Number(req.query.tail || 200), 1, 1000);
     try {
-      const { stdout } = await runOpenClaw(["gateway", "logs", "--tail", String(tail)], { env: getOpenclawEnv() });
-      const lines = stdout.split("\n").map((line) => line.trim()).filter(Boolean);
-      res.json({ lines, raw: stdout.trim() });
+      const { stdout } = await runOpenClaw(["gateway", "logs", "--tail", String(tail)], {
+        env: getOpenclawEnv(),
+      });
+      const redacted = redactText(stdout, [
+        getGatewayConfig().token,
+        secret,
+        process.env.OPENCLAW_GATEWAY_TOKEN,
+      ]);
+      const lines = redacted
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      res.json({ lines, raw: redacted.trim() });
     } catch (error) {
       res.status(503).json({ error: "No se pudieron obtener logs", detail: error.message });
     }
@@ -304,7 +326,11 @@ const createServer = () => {
       return res.status(403).json({ error: "Acción no permitida" });
     }
     const tail = clamp(Number(req.query.tail || 120), 1, 300);
-    const intervalMs = clamp(Number(req.query.interval || config.observability?.log_poll_ms || 1500), 800, 8000);
+    const intervalMs = clamp(
+      Number(req.query.interval || config.observability?.log_poll_ms || 1500),
+      800,
+      8000
+    );
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -325,8 +351,18 @@ const createServer = () => {
 
     const pollLogs = async () => {
       try {
-        const { stdout } = await runOpenClaw(["gateway", "logs", "--tail", String(tail)], { env: getOpenclawEnv() });
-        const lines = stdout.split("\n").map((line) => line.trim()).filter(Boolean);
+        const { stdout } = await runOpenClaw(["gateway", "logs", "--tail", String(tail)], {
+          env: getOpenclawEnv(),
+        });
+        const redacted = redactText(stdout, [
+          getGatewayConfig().token,
+          secret,
+          process.env.OPENCLAW_GATEWAY_TOKEN,
+        ]);
+        const lines = redacted
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
         sendEvent("logs", { lines });
       } catch (error) {
         sendEvent("error", { message: error.message });
@@ -350,11 +386,13 @@ const createServer = () => {
       return res.status(403).json({ error: "Acción no permitida" });
     }
     try {
-      const { stdout } = await runOpenClaw(["gateway", "probe", "--json"], { env: getOpenclawEnv() });
+      const { stdout } = await runOpenClaw(["gateway", "probe", "--json"], {
+        env: getOpenclawEnv(),
+      });
       const trimmed = stdout.trim();
       const parsed = trimmed ? JSON.parse(trimmed) : [];
       res.json({ gateways: parsed, raw: trimmed });
-    } catch (error) {
+    } catch {
       try {
         const { stdout } = await runOpenClaw(["gateway", "probe"], { env: getOpenclawEnv() });
         res.json({ gateways: parseListOutput(stdout), raw: stdout.trim(), fallback: true });
@@ -391,6 +429,7 @@ const createServer = () => {
       return res.status(403).json({ error: "Acción no permitida" });
     }
     const gatewayToken = getGatewayConfig().token;
+    const configToken = config.gateway?.auth?.token;
     const env = getOpenclawEnv();
     let statusAll = "openclaw status --all: no disponible";
     let logs = "openclaw gateway logs: no disponible";
@@ -408,14 +447,14 @@ const createServer = () => {
     }
 
     const configRaw = fs.readFileSync(CONFIG_PATH, "utf-8");
-    const secrets = [gatewayToken, process.env.OPENCLAW_GATEWAY_TOKEN, secret];
+    const secrets = [gatewayToken, configToken, process.env.OPENCLAW_GATEWAY_TOKEN, secret];
     const { bundlePath, tempDir } = await writeSupportBundle({
       clawdeskVersion: packageJson.version,
       config,
       configRaw,
       statusAll,
       logs,
-      secrets
+      secrets,
     });
     const filename = `clawdesk-support-bundle-${new Date().toISOString().slice(0, 10)}.tar.gz`;
     res.setHeader("Content-Type", "application/gzip");
@@ -427,7 +466,7 @@ const createServer = () => {
       .pipe(res);
   });
 
-  app.use((err, req, res, next) => {
+  app.use((err, req, res, _next) => {
     const message = err && err.message ? err.message : "Error inesperado";
     res.status(500).json({ error: message });
   });
