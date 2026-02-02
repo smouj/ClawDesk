@@ -94,6 +94,15 @@ const init = async () => {
       showToast(error.message, "warn");
     }
   });
+  document.getElementById("view-agents")?.addEventListener("click", async () => {
+    try {
+      const data = await api.getGatewayControlUrl();
+      window.open(data.url, "_blank", "noopener");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+  document.getElementById("view-events")?.addEventListener("click", () => setActivePage("timeline"));
 
   const guideModal = document.getElementById("guide-modal");
   const guideTitle = document.getElementById("guide-title");

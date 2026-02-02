@@ -24,6 +24,7 @@ export const renderDashboard = (state) => {
   const gatewayBind = document.getElementById("gateway-bind");
   const gatewayLatency = document.getElementById("gateway-latency");
   const gatewayAllow = document.getElementById("gateway-allow");
+  const gatewayVersion = document.getElementById("gateway-version");
   const usageTokens = document.getElementById("usage-tokens");
   const usageCost = document.getElementById("usage-cost");
   const usageNote = document.getElementById("usage-note");
@@ -31,6 +32,7 @@ export const renderDashboard = (state) => {
   const lcdStatus = document.getElementById("lcd-status");
   const versionBadge = document.getElementById("version-badge");
   const openControl = document.getElementById("open-control-ui");
+  const recentEvents = document.getElementById("recent-events");
 
   if (state.gateway) {
     const statusText = (state.gateway.status || "").trim();
@@ -41,7 +43,9 @@ export const renderDashboard = (state) => {
       gatewayState.textContent = online ? "online" : offline ? "offline" : "unknown";
       gatewayState.className = `badge ${online ? "ok" : offline ? "crit" : "warn"}`;
     }
-    gatewaySummary.textContent = statusText || "Sin datos";
+    if (gatewaySummary) {
+      gatewaySummary.textContent = statusText || "Sin datos";
+    }
     setLcd(gatewayBind, `bind ${state.gateway.profile || "--"}`);
     setLcd(gatewayLatency, `latency ${state.gateway.latency || "--"}`);
   }
@@ -64,6 +68,9 @@ export const renderDashboard = (state) => {
     if (versionBadge && state.config.version) {
       versionBadge.textContent = `v${state.config.version}`;
     }
+    if (gatewayVersion && state.config.version) {
+      gatewayVersion.textContent = `v${state.config.version}`;
+    }
     if (gatewayAllow && state.config.security?.allow_actions) {
       const count = state.config.security.allow_actions.length;
       gatewayAllow.textContent = `allow ${count}`;
@@ -77,7 +84,31 @@ export const renderDashboard = (state) => {
     const active = state.config.activeProfile;
     const profile = state.config.profiles?.find((p) => p.name === active);
     if (profile) {
-      setLcd(lcdStatus, `HOST ${profile.bind}:${profile.port}`);
+      setLcd(lcdStatus, `${profile.bind}:${profile.port}`);
+    }
+  }
+
+  if (recentEvents) {
+    const entries = (state.events || []).slice(-4).reverse();
+    if (!entries.length) {
+      recentEvents.innerHTML = "<p class='muted'>Sin eventos recientes.</p>";
+    } else {
+      recentEvents.innerHTML = entries
+        .map((entry) => {
+          const type = entry.type || entry.event || "info";
+          const message = entry.message || entry.detail || entry.action || "Evento registrado";
+          const timestamp = entry.timestamp || entry.time || entry.at || "";
+          return `
+            <div class="event-item">
+              <div class="event-meta">
+                <span class="badge">${type}</span>
+                <span class="muted">${timestamp}</span>
+              </div>
+              <strong>${message}</strong>
+            </div>
+          `;
+        })
+        .join("");
     }
   }
 };
@@ -169,14 +200,20 @@ export const renderEvents = (state) => {
     return;
   }
   list.innerHTML = state.events
-    .map(
-      (entry) => `
-      <div class="inline">
-        <span class="badge">${entry.type}</span>
-        <span class="muted">${entry.timestamp}</span>
-      </div>
-    `
-    )
+    .map((entry) => {
+      const type = entry.type || entry.event || "info";
+      const message = entry.message || entry.detail || entry.action || "Evento registrado";
+      const timestamp = entry.timestamp || entry.time || entry.at || "";
+      return `
+        <div class="event-item">
+          <div class="event-meta">
+            <span class="badge">${type}</span>
+            <span class="muted">${timestamp}</span>
+          </div>
+          <strong>${message}</strong>
+        </div>
+      `;
+    })
     .join("");
 };
 
