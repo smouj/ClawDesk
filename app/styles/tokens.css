@@ -1,17 +1,18 @@
 :root {
   color-scheme: dark;
-  --bg: #07080d;
-  --panel: rgba(255, 255, 255, 0.06);
-  --line: rgba(255, 255, 255, 0.12);
+  --bg: #0a0c14;
+  --panel: rgba(12, 16, 28, 0.92);
+  --panel-soft: rgba(18, 24, 40, 0.72);
+  --line: rgba(148, 163, 184, 0.2);
   --text: #eaf0ff;
   --muted: rgba(234, 240, 255, 0.66);
-  --cyan: #34f2ff;
-  --magenta: #ff4fd8;
-  --lime: #6bff7a;
-  --amber: #ffb020;
-  --red: #ff2d2d;
+  --cyan: #22d3ee;
+  --magenta: #a855f7;
+  --lime: #6ee7b7;
+  --amber: #fbbf24;
+  --red: #f87171;
   --radius: 16px;
-  --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
   --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -22,7 +23,8 @@
 body {
   margin: 0;
   font-family: var(--font);
-  background: radial-gradient(circle at top, rgba(52, 242, 255, 0.08), transparent 45%),
+  background: radial-gradient(circle at top, rgba(34, 211, 238, 0.12), transparent 45%),
+    radial-gradient(circle at bottom, rgba(168, 85, 247, 0.12), transparent 45%),
     var(--bg);
   color: var(--text);
 }
