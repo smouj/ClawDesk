@@ -23,14 +23,25 @@ export const renderDashboard = (state) => {
   const gatewaySummary = document.getElementById("gateway-summary");
   const gatewayBind = document.getElementById("gateway-bind");
   const gatewayLatency = document.getElementById("gateway-latency");
+  const gatewayAllow = document.getElementById("gateway-allow");
   const usageTokens = document.getElementById("usage-tokens");
   const usageCost = document.getElementById("usage-cost");
   const usageNote = document.getElementById("usage-note");
+  const usageState = document.getElementById("usage-state");
   const lcdStatus = document.getElementById("lcd-status");
+  const versionBadge = document.getElementById("version-badge");
+  const openControl = document.getElementById("open-control-ui");
 
   if (state.gateway) {
-    gatewayState.textContent = state.gateway.status ? "online" : "offline";
-    gatewaySummary.textContent = state.gateway.status || "Sin datos";
+    const statusText = (state.gateway.status || "").trim();
+    const lowered = statusText.toLowerCase();
+    const online = ["online", "running", "up", "active"].some((flag) => lowered.includes(flag));
+    const offline = ["offline", "stopped", "down", "inactive", "error"].some((flag) => lowered.includes(flag));
+    if (gatewayState) {
+      gatewayState.textContent = online ? "online" : offline ? "offline" : "unknown";
+      gatewayState.className = `badge ${online ? "ok" : offline ? "crit" : "warn"}`;
+    }
+    gatewaySummary.textContent = statusText || "Sin datos";
     setLcd(gatewayBind, `bind ${state.gateway.profile || "--"}`);
     setLcd(gatewayLatency, `latency ${state.gateway.latency || "--"}`);
   }
@@ -39,12 +50,32 @@ export const renderDashboard = (state) => {
     setLcd(usageTokens, `tokens ${state.usage.totals.tokensIn ?? "n/a"}`);
     setLcd(usageCost, `cost ${state.usage.totals.cost ?? "n/a"}`);
     usageNote.textContent = state.usage.notes || "Actualizado";
+    if (usageState) {
+      usageState.textContent = "synced";
+      usageState.className = "badge ok";
+    }
     pulseVu(document.getElementById("vu-activity"), 3);
+  } else if (usageState) {
+    usageState.textContent = "n/a";
+    usageState.className = "badge warn";
   }
 
   if (state.config) {
+    if (versionBadge && state.config.version) {
+      versionBadge.textContent = `v${state.config.version}`;
+    }
+    if (gatewayAllow && state.config.security?.allow_actions) {
+      const count = state.config.security.allow_actions.length;
+      gatewayAllow.textContent = `allow ${count}`;
+      gatewayAllow.className = `badge ${count ? "ok" : "warn"}`;
+    }
+    if (openControl) {
+      const allow = state.config.security?.allow_actions?.includes("gateway.dashboard");
+      openControl.disabled = !allow;
+      openControl.title = allow ? "" : "Acción no permitida por policy";
+    }
     const active = state.config.activeProfile;
-    const profile = state.config.profiles.find((p) => p.name === active);
+    const profile = state.config.profiles?.find((p) => p.name === active);
     if (profile) {
       setLcd(lcdStatus, `HOST ${profile.bind}:${profile.port}`);
     }
@@ -63,7 +94,7 @@ export const renderProfiles = (state) => {
   empty.style.display = "none";
   state.profiles.forEach((profile) => {
     const card = document.createElement("article");
-    card.className = "card";
+    card.className = `card ${profile.active ? "card-active" : ""}`;
     card.innerHTML = `
       <div class="section-header">
         <h3>${profile.name}</h3>
@@ -71,7 +102,9 @@ export const renderProfiles = (state) => {
       </div>
       <p class="muted">${profile.bind}:${profile.port}</p>
       <div class="inline">
-        <button class="btn secondary" data-action="activate">Activar</button>
+        <button class="btn secondary" data-action="activate" ${profile.active ? "disabled" : ""}>${
+          profile.active ? "Activo" : "Activar"
+        }</button>
         <button class="btn danger" data-action="delete">Eliminar</button>
       </div>
     `;
@@ -151,4 +184,13 @@ export const renderLogs = (lines) => {
   const container = document.getElementById("log-stream");
   if (!container) return;
   container.textContent = lines.join("\n");
+};
+
+export const renderSettings = (state) => {
+  const remoteStatus = document.getElementById("remote-status");
+  if (remoteStatus && state.config?.security) {
+    const enabled = Boolean(state.config.security.enableRemoteProfiles);
+    remoteStatus.textContent = enabled ? "enabled" : "disabled";
+    remoteStatus.className = `badge ${enabled ? "ok" : "warn"}`;
+  }
 };
