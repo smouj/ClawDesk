@@ -3,304 +3,65 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="clawdesk-api-token" content="__CLAWDESK_TOKEN__" />
-    <title>ClawDesk OS · Retro-OS 2000 / Cyber-Y2K Winamp Skin Edition</title>
-    <link rel="icon" href="icons/logo-brain.png" />
+    <title>ClawDesk Dashboard Demo · v1.3.0</title>
+    <link rel="icon" href="../assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="retro-os">
-    <div class="noise"></div>
-    <div class="desk">
-      <section class="win main-win">
-        <header class="titlebar">
-          <div class="titlebar-left">
-            <img class="brand-icon" src="icons/logo-brain.png" alt="ClawDesk logo" />
-            <div class="title-text">
-              <h1>ClawDesk OS</h1>
-              <span>Retro-OS 2000 / Cyber-Y2K Winamp Skin Edition</span>
-            </div>
-            <span class="lcd badge" id="gateway-status">--</span>
-          </div>
-          <div class="titlebar-right">
-            <div class="equalizer" id="status-eq" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="window-controls" aria-hidden="true">
-              <button class="chrome-btn" type="button">_</button>
-              <button class="chrome-btn" type="button">▢</button>
-              <button class="chrome-btn" type="button">✕</button>
-            </div>
-          </div>
-        </header>
-
-        <nav class="tab-strip" role="tablist">
-          <button class="tab active nav-item" data-view="dashboard" role="tab">Dashboard</button>
-          <button class="tab nav-item" data-view="agents" role="tab">Agents</button>
-          <button class="tab nav-item" data-view="skills" role="tab">Skills</button>
-          <button class="tab nav-item" data-view="logs" role="tab">Logs</button>
-          <button class="tab nav-item" data-view="settings" role="tab">Settings</button>
-        </nav>
-
-        <div class="utility-bar">
+  <body>
+    <div class="window">
+      <header class="titlebar">
+        <div class="brand">
+          <img src="../assets/brand/logo-brain.svg" alt="ClawDesk logo" />
           <div>
-            <span class="chip" id="version-label">v1.2.0</span>
-            <span class="chip" id="gateway-state">--</span>
-          </div>
-          <div class="utility-actions">
-            <button class="btn-jelly" id="open-control-ui">Open Control UI</button>
-            <button class="btn-jelly" id="refresh-view">Sync</button>
-            <button class="btn-jelly ghost" id="launch-wizard">Connection Wizard</button>
-            <button class="btn-jelly ghost" id="support-bundle">Support Bundle</button>
+            <h1>ClawDesk OS</h1>
+            <small class="muted">Dashboard demo · Retro minimal</small>
           </div>
         </div>
+        <span class="lcd">demo</span>
+      </header>
 
-        <main class="content">
-          <section class="view active" data-view="dashboard">
-            <div class="dashboard-grid">
-              <section class="win panel">
-                <header class="panel-titlebar">
-                  <h3>Gateway Status</h3>
-                  <span class="badge" id="gateway-actions-status">Pending</span>
-                </header>
-                <div class="panel-body">
-                  <div class="lcd" id="gateway-summary">Sin datos</div>
-                  <div class="panel-rows">
-                    <div>Estado: <strong id="gateway-state-text">--</strong></div>
-                    <div>Última actividad: <strong id="last-activity">--</strong></div>
-                    <div>Bind: <strong id="gateway-bind">--</strong></div>
-                    <div>Port: <strong id="gateway-port">--</strong></div>
-                    <div>Token source: <strong id="gateway-token-source">--</strong></div>
-                  </div>
-                  <div class="panel-actions">
-                    <button class="btn-jelly" id="gateway-refresh">Refresh</button>
-                  </div>
-                </div>
-              </section>
+      <nav class="tabstrip">
+        <button class="active" data-page="dashboard">Dashboard</button>
+        <button data-page="usage">Usage</button>
+        <button data-page="timeline">Timeline</button>
+      </nav>
 
-              <section class="win panel">
-                <header class="panel-titlebar">
-                  <h3>Gateway Actions</h3>
-                  <span class="badge warn">Allow-actions</span>
-                </header>
-                <div class="panel-body">
-                  <p class="muted">Acciones seguras bajo allow-actions.</p>
-                  <div class="panel-actions">
-                    <button class="btn-jelly" id="gateway-start">Start</button>
-                    <button class="btn-jelly warn" id="gateway-stop">Stop</button>
-                    <button class="btn-jelly" id="gateway-restart">Restart</button>
-                    <button class="btn-jelly" id="gateway-probe">Probe</button>
-                    <button class="btn-jelly" id="gateway-dashboard">Dashboard</button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="win panel">
-                <header class="panel-titlebar">
-                  <h3>Telemetry</h3>
-                  <span class="badge" id="telemetry-status">Nominal</span>
-                </header>
-                <div class="panel-body">
-                  <div class="vu" id="telemetry-vu" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                  <div class="panel-rows">
-                    <div>Latencia: <strong id="gateway-latency">--</strong></div>
-                    <div>Último ping: <strong id="last-ping">--</strong></div>
-                    <div>Última acción: <strong id="last-action">--</strong></div>
-                    <div>OpenClaw: <strong id="openclaw-version">--</strong></div>
-                  </div>
-                  <div class="knob-row">
-                    <div class="knob" aria-hidden="true"><span></span></div>
-                    <div class="knob" aria-hidden="true"><span></span></div>
-                    <div class="knob" aria-hidden="true"><span></span></div>
-                  </div>
-                </div>
-              </section>
-
-              <section class="win panel">
-                <header class="panel-titlebar">
-                  <h3>Security Center</h3>
-                  <span class="badge ok">Local-only</span>
-                </header>
-                <div class="panel-body">
-                  <div class="panel-rows">
-                    <div>Loopback enforced: 127.0.0.1 / localhost.</div>
-                    <div class="muted">Para acceso remoto, usa túneles cifrados.</div>
-                    <div>Allow-actions: <strong id="allow-actions">--</strong></div>
-                  </div>
-                  <div class="panel-actions">
-                    <button class="btn-jelly" id="tailscale-guide">Guía Tailscale</button>
-                    <button class="btn-jelly" id="ssh-guide">Guía SSH</button>
-                  </div>
-                </div>
-              </section>
-
-              <section class="win panel">
-                <header class="panel-titlebar">
-                  <h3>Logs Preview</h3>
-                  <span class="badge">SSE</span>
-                </header>
-                <div class="panel-body">
-                  <div class="terminal" id="log-preview"></div>
-                </div>
-              </section>
-            </div>
-          </section>
-
-          <section class="view" data-view="agents">
-            <section class="win panel">
-              <header class="panel-titlebar">
-                <h2>Agents</h2>
-                <div class="filters">
-                  <input type="search" id="agent-search" placeholder="Buscar por nombre o id..." />
-                  <select id="agent-filter">
-                    <option value="all">Estado: todos</option>
-                    <option value="ok">OK</option>
-                    <option value="warn">WARN</option>
-                    <option value="error">ERROR</option>
-                  </select>
-                </div>
-              </header>
-              <div class="panel-body">
-                <div class="agent-grid" id="agent-list"></div>
-                <p class="muted" id="agent-empty">Sin datos de agentes. Verifica OpenClaw.</p>
-              </div>
-            </section>
-          </section>
-
-          <section class="view" data-view="skills">
-            <section class="win panel">
-              <header class="panel-titlebar">
-                <h2>Skills</h2>
-                <p class="muted">Habilita o deshabilita skills registradas en OpenClaw.</p>
-              </header>
-              <div class="panel-body">
-                <div class="agent-grid" id="skill-list"></div>
-                <p class="muted" id="skill-empty">Sin datos de skills. Verifica OpenClaw.</p>
-              </div>
-            </section>
-          </section>
-
-          <section class="view" data-view="logs">
-            <section class="win panel">
-              <header class="panel-titlebar">
-                <h2>Logs en vivo</h2>
-                <p class="muted">Streaming SSE con filtros, búsqueda y descarga.</p>
-              </header>
-              <div class="panel-body">
-                <div class="filters">
-                  <select id="log-level">
-                    <option value="all">Nivel: todos</option>
-                    <option value="INFO">INFO</option>
-                    <option value="WARN">WARN</option>
-                    <option value="ERROR">ERROR</option>
-                  </select>
-                  <input type="search" id="log-search" placeholder="Buscar en logs..." />
-                  <button class="btn-jelly" id="toggle-stream">Pause</button>
-                  <button class="btn-jelly" id="toggle-autoscroll">Auto-scroll</button>
-                  <button class="btn-jelly" id="refresh-logs">Sync</button>
-                </div>
-                <div class="terminal" id="log-stream" aria-live="polite"></div>
-                <div class="panel-actions">
-                  <button class="btn-jelly" id="export-logs">Export logs</button>
-                  <button class="btn-jelly warn" id="bundle-logs">Generate Support Bundle</button>
-                  <button class="btn-jelly danger" id="clear-logs">Clear</button>
-                </div>
-              </div>
-            </section>
-          </section>
-
-          <section class="view" data-view="settings">
-            <section class="win panel">
-              <header class="panel-titlebar">
-                <h2>Connection Wizard</h2>
-                <p class="muted">Onboarding guiado con detección automática.</p>
-              </header>
-              <div class="panel-body">
-                <div class="wizard">
-                  <div class="wizard-step">
-                    <span class="step-badge">1</span>
-                    <div>
-                      <h4>Detectar OpenClaw</h4>
-                      <p id="detect-openclaw">Buscando instalación local...</p>
-                    </div>
-                  </div>
-                  <div class="wizard-step">
-                    <span class="step-badge">2</span>
-                    <div>
-                      <h4>Gateway + URL sugerida</h4>
-                      <p id="detect-gateway">Sugerencia: http://127.0.0.1:18789</p>
-                    </div>
-                  </div>
-                  <div class="wizard-step">
-                    <span class="step-badge">3</span>
-                    <div>
-                      <h4>Token seguro</h4>
-                      <p id="detect-token">Ruta detectada: ~/.config/openclaw/gateway.auth.token</p>
-                    </div>
-                  </div>
-                  <div class="wizard-step">
-                    <span class="step-badge">4</span>
-                    <div>
-                      <h4>Test OK</h4>
-                      <p id="detect-test">Validando conexión...</p>
-                    </div>
-                  </div>
-                  <button class="btn-jelly primary" id="launch-dashboard">Launch Dashboard</button>
-                </div>
-              </div>
-            </section>
-
-            <section class="win panel">
-              <header class="panel-titlebar">
-                <h2>Configuración</h2>
-                <p class="muted">Resumen de estado local y rutas configuradas.</p>
-              </header>
-              <div class="panel-body">
-                <div class="settings-card">
-                  <p><strong>Host:</strong> <span id="config-host">--</span></p>
-                  <p><strong>Port:</strong> <span id="config-port">--</span></p>
-                  <p><strong>Gateway URL:</strong> <span id="config-gateway">--</span></p>
-                  <p><strong>Gateway Bind:</strong> <span id="config-gateway-bind">--</span></p>
-                  <p><strong>Gateway Port:</strong> <span id="config-gateway-port">--</span></p>
-                  <p><strong>Token path:</strong> <span id="config-token">--</span></p>
-                  <p><strong>Token source:</strong> <span id="config-token-source">--</span></p>
-                  <p><strong>Allow-actions:</strong> <span id="config-actions">--</span></p>
-                </div>
-                <div class="panel-actions">
-                  <button class="btn-jelly danger" id="rotate-secret">Rotate secret</button>
-                </div>
-              </div>
-            </section>
-          </section>
-        </main>
+      <section class="page active" id="page-dashboard">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Gateway Status</h3>
+            <span class="badge">online</span>
+            <p class="muted">localhost:18789 · loopback</p>
+          </div>
+          <div class="card">
+            <h3>Usage Pulse</h3>
+            <div class="lcd">tokens 12k</div>
+            <p class="muted">Cost n/a · últimos 60s</p>
+          </div>
+        </div>
       </section>
-    </div>
 
-    <div class="modal" id="wizard-modal" aria-hidden="true">
-      <div class="modal-content win">
-        <header class="panel-titlebar">
-          <h2>Connection Wizard</h2>
-          <button class="btn-jelly ghost" id="close-wizard">Cerrar</button>
-        </header>
-        <ol class="modal-steps">
-          <li><strong>Detectar OpenClaw</strong> · Versión: <span id="modal-openclaw">--</span></li>
-          <li><strong>Detectar Gateway</strong> · URL: <span id="modal-gateway">--</span></li>
-          <li><strong>Token seguro</strong> · Ruta: <span id="modal-token">--</span></li>
-          <li><strong>Test</strong> · Estado: <span class="badge" id="modal-test">--</span></li>
-        </ol>
-        <button class="btn-jelly primary" id="confirm-wizard">Launch Dashboard</button>
-      </div>
+      <section class="page" id="page-usage">
+        <div class="grid-2">
+          <div class="card">
+            <h3>By Provider</h3>
+            <p class="muted">openai · 12k tokens</p>
+          </div>
+          <div class="card">
+            <h3>By Model</h3>
+            <p class="muted">gpt-4 · 12k tokens</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-timeline">
+        <div class="card">
+          <h3>Audit Timeline</h3>
+          <p class="muted">profile.activate · usage.snapshot · macro.run</p>
+        </div>
+      </section>
+
+      <footer>Demo estático. El dashboard real vive en tu host local.</footer>
     </div>
 
     <script src="app.js"></script>

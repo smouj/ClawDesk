@@ -12,38 +12,28 @@ process.env.CLAWDESK_SECRET_PATH = secretPath;
 process.env.CLAWDESK_CONFIG_DIR = tempDir;
 process.env.CLAWDESK_PID_PATH = path.join(tempDir, "clawdesk.pid");
 process.env.CLAWDESK_LOG_PATH = path.join(tempDir, "clawdesk.log");
+process.env.CLAWDESK_EVENTS_PATH = path.join(tempDir, "events.jsonl");
+process.env.CLAWDESK_USAGE_PATH = path.join(tempDir, "usage.jsonl");
 
 const { createServer } = require("./server");
 
 const config = {
-  configVersion: 2,
-  app: { host: "127.0.0.1", port: 5180, theme: "dark" },
-  gateway: {
-    url: "http://127.0.0.1:18789",
-    bind: "127.0.0.1",
-    port: 18789,
-    token_path: "/tmp/does-not-exist",
-    auth: { token: "" },
+  configVersion: 3,
+  app: { host: "127.0.0.1", port: 5180 },
+  profiles: {
+    local: {
+      name: "local",
+      bind: "127.0.0.1",
+      port: 18789,
+      token_path: "/tmp/does-not-exist",
+      auth: { token: "" },
+    },
   },
+  activeProfile: "local",
   security: {
-    allow_actions: [
-      "gateway.status",
-      "gateway.logs",
-      "gateway.probe",
-      "gateway.dashboard",
-      "gateway.start",
-      "gateway.stop",
-      "gateway.restart",
-      "agent.list",
-      "agent.start",
-      "agent.stop",
-      "agent.restart",
-      "skills.list",
-      "skills.enable",
-      "skills.disable",
-      "support.bundle",
-      "secret.rotate",
-    ],
+    allow_actions: ["gateway.status", "gateway.logs", "usage.read", "events.read"],
+    enableRemoteProfiles: false,
+    allowedRemoteHosts: [],
   },
   observability: { log_poll_ms: 1500, backoff_max_ms: 8000 },
 };

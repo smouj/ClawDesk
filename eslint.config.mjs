@@ -41,6 +41,17 @@ export default [
     ignores: ["node_modules/**", "docs/dashboard/**"],
   },
   {
+    files: ["app/js/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...browserGlobals,
+      },
+    },
+    rules: baseRules,
+  },
+  {
     files: ["**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,

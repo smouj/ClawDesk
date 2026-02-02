@@ -1,19 +1,21 @@
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "app": {
     "host": "127.0.0.1",
-    "port": 4178,
-    "theme": "dark"
+    "port": 4178
   },
-  "gateway": {
-    "url": "http://127.0.0.1:18789",
-    "bind": "127.0.0.1",
-    "port": 18789,
-    "token_path": "~/.config/openclaw/gateway.auth.token",
-    "auth": {
-      "token": ""
+  "profiles": {
+    "local": {
+      "name": "local",
+      "bind": "127.0.0.1",
+      "port": 18789,
+      "token_path": "~/.config/openclaw/gateway.auth.token",
+      "auth": {
+        "token": ""
+      }
     }
   },
+  "activeProfile": "local",
   "security": {
     "allow_actions": [
       "gateway.status",
@@ -23,16 +25,25 @@
       "gateway.start",
       "gateway.stop",
       "gateway.restart",
-      "agent.list",
-      "agent.start",
-      "agent.stop",
-      "agent.restart",
-      "skills.list",
-      "skills.enable",
-      "skills.disable",
-      "support.bundle",
-      "secret.rotate"
-    ]
+      "profiles.read",
+      "profiles.activate",
+      "profiles.write",
+      "profiles.delete",
+      "macros.read",
+      "macros.run",
+      "macros.write",
+      "usage.read",
+      "usage.export",
+      "events.read"
+    ],
+    "enableRemoteProfiles": false,
+    "allowedRemoteHosts": []
+  },
+  "macros": {
+    "pulse": {
+      "description": "Status + usage snapshot",
+      "steps": [{ "action": "gateway.status" }, { "action": "usage.read" }]
+    }
   },
   "observability": {
     "log_poll_ms": 1500,

@@ -2,22 +2,23 @@ import { describe, expect, it } from "vitest";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const { parseListOutput, resolveOpenClawBinary } = require("../server/openclaw.js");
+const { parseUsageJson, parseUsageText } = require("../server/usage/parse");
 
-describe("openclaw helpers", () => {
-  it("parses JSON arrays when available", () => {
-    const parsed = parseListOutput('["alpha", "beta"]');
-    expect(parsed).toEqual(["alpha", "beta"]);
+describe("usage parser", () => {
+  it("parses JSON usage payloads", () => {
+    const parsed = parseUsageJson({
+      totals: { tokens_in: 120, tokens_out: 80, cost: 0.12 },
+      providers: [{ name: "openai", tokens: 200, cost: 0.12, requests: 3 }],
+      models: [{ name: "gpt-4", tokens: 200, cost: 0.12 }],
+      tools: [{ name: "search", usage: 5, cost: 0.02, provider: "openai" }],
+    });
+    expect(parsed.totals.tokensIn).toBe(120);
+    expect(parsed.byProvider[0].name).toBe("openai");
   });
 
-  it("falls back to line parsing", () => {
-    const parsed = parseListOutput("alpha\nbeta\n");
-    expect(parsed).toEqual(["alpha", "beta"]);
-  });
-
-  it("returns a binary hint", () => {
-    const resolved = resolveOpenClawBinary();
-    expect(resolved).toHaveProperty("binary");
-    expect(resolved).toHaveProperty("path");
+  it("parses text fallback", () => {
+    const parsed = parseUsageText("tokens in: 50\ntokens out: 20\ncost: $0.05\n");
+    expect(parsed.totals.tokensIn).toBe(50);
+    expect(parsed.totals.cost).toBe(0.05);
   });
 });
