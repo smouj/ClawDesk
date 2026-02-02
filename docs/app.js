@@ -12,19 +12,21 @@ const copyButton = document.getElementById("copy-command");
 const copyPayloadButton = document.getElementById("copy-payload");
 const toast = document.getElementById("toast");
 
-const baseInstaller =
-  "curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash";
+const repoUrl = "https://github.com/smouj/ClawDesk.git";
+const channelMap = {
+  stable: "main",
+  nightly: "main",
+};
 
 const buildCommand = () => {
-  const env = [];
-  if (state.channel === "nightly") {
-    env.push("CLAWDESK_CHANNEL=nightly");
-  }
-  if (state.os === "wsl") {
-    env.push("CLAWDESK_WSL=1");
-  }
-  const prefix = env.length ? `${env.join(" ")} ` : "";
-  return `${prefix}${baseInstaller}`;
+  const ref = channelMap[state.channel] || "main";
+  const lines = [
+    `git clone --depth 1 --branch ${ref} ${repoUrl}`,
+    "cd ClawDesk",
+  ];
+  const installLine = state.os === "wsl" ? "CLAWDESK_WSL=1 ./install.sh" : "./install.sh";
+  lines.push(installLine);
+  return lines.join("\n");
 };
 
 const buildPayload = () => {
@@ -42,8 +44,8 @@ const updateView = () => {
   const payload = buildPayload();
   const isAgent = state.mode === "agent";
 
-  installTitle.textContent = isAgent ? "Payload para agentes" : "Instalar en 1 comando";
-  installBadge.textContent = state.channel === "nightly" ? "Nightly" : "Stable";
+  installTitle.textContent = isAgent ? "Payload para agentes" : "Instalar con git clone";
+  installBadge.textContent = "Git";
 
   if (isAgent) {
     commandEl.textContent = payload;

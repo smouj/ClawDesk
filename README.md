@@ -12,20 +12,20 @@ ClawDesk 🦞 — panel local, security-first, para gestionar OpenClaw desde tu 
 - **Auth local** con secret y rotación segura.
 - **Allow-actions** obligatorio para acciones semánticas.
 - **Landing Retro-OS** para instalación y payloads de agentes.
-- **Release automation** con assets + SHA256SUMS.
+- **Instalación git-first** con instalador interactivo.
 
-## 🧭 Instalación (stable)
+## 🧭 Instalación (git clone + install.sh)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash
+git clone https://github.com/smouj/ClawDesk.git
+cd ClawDesk
+./install.sh
 ```
 
 Opciones:
 
-- `CLAWDESK_CHANNEL=nightly` para instalar desde `main`.
-- `CLAWDESK_VERSION=v2.0.0` para fijar versión estable.
-
-Stable detecta automáticamente el latest release si no defines `CLAWDESK_VERSION`.
+- `CLAWDESK_REF=main` para elegir la rama al clonar (si usas el instalador remoto).
+- `CLAWDESK_WSL=1` si estás en WSL y quieres forzar el aviso de interoperabilidad.
 
 ## ▶️ Ejecutar
 
@@ -75,7 +75,7 @@ Sincroniza docs desde la UI:
 - **OpenClaw no detectado**: asegúrate de que `openclaw` esté en PATH.
 - **Token ausente**: revisa `gateway.auth.token` o exporta `OPENCLAW_GATEWAY_TOKEN`.
 - **Puerto ocupado**: cambia el puerto en `config.json` y reinicia.
-- **404 en instalación**: revisa que el release exista y que el asset `clawdesk-vX.Y.Z.tar.gz` esté publicado.
+- **Fallo al clonar**: valida conectividad con GitHub y que `git` esté instalado.
 
 ---
 

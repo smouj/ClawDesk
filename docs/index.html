@@ -35,21 +35,24 @@
               Esta landing no llama a localhost. Para el panel real ejecuta en tu host local:
             </p>
             <div class="code">
-              curl -fsSL
-              https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash
+              git clone https://github.com/smouj/ClawDesk.git
+              <br />
+              cd ClawDesk
+              <br />
+              ./install.sh
             </div>
-            <p class="muted">Stable usa el latest release automáticamente.</p>
+            <p class="muted">Instalador interactivo con comprobaciones y defaults seguros.</p>
           </div>
           <div class="card">
-            <h2>Safe install</h2>
-            <p class="muted">Usa releases oficiales + checksums verificados. Nightly sigue main.</p>
+            <h2>Modo remoto</h2>
+            <p class="muted">Si necesitas automatizar, usa el instalador remoto (git clone + install.sh).</p>
             <a
               class="btn"
-              href="https://github.com/smouj/ClawDesk/releases"
+              href="https://github.com/smouj/ClawDesk"
               target="_blank"
               rel="noreferrer"
             >
-              Ver releases
+              Ver repositorio
             </a>
           </div>
         </div>
@@ -73,9 +76,9 @@
             <div class="lcd">redaction+</div>
           </div>
           <div class="card">
-            <h2>Release assets automáticos</h2>
-            <p class="muted">Tarball + SHA256SUMS listos al tag v*.</p>
-            <div class="lcd">release.yml</div>
+            <h2>Installer UI mejorado</h2>
+            <p class="muted">ASCII banner, pasos guiados y resumen final.</p>
+            <div class="lcd">installer++</div>
           </div>
         </div>
       </section>
