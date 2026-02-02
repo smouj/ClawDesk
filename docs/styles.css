@@ -118,6 +118,36 @@ footer {
   font-size: 0.85rem;
 }
 
+.simple {
+  max-width: 720px;
+  margin: 40px auto;
+  display: grid;
+  gap: 18px;
+  padding: 0 20px 40px;
+}
+
+.simple header {
+  display: grid;
+  gap: 6px;
+}
+
+.simple h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.simple pre {
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(5, 8, 15, 0.98);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow-x: auto;
+}
+
 .section {
   padding: 20px;
 }

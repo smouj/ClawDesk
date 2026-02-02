@@ -2,15 +2,21 @@
 set -euo pipefail
 
 APP_NAME="clawdesk"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="$HOME/.clawdesk"
 APP_DIR="$INSTALL_DIR/app"
 SERVER_DIR="$INSTALL_DIR/server"
-BIN_DIR="$HOME/.local/bin"
+BIN_DIR_LOCAL="$HOME/.local/bin"
+BIN_DIR_GLOBAL="/usr/local/bin"
 CONFIG_DIR="$HOME/.config/clawdesk"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 SECRET_FILE="$CONFIG_DIR/secret"
-PID_FILE="$CONFIG_DIR/clawdesk.pid"
-LOG_FILE="$CONFIG_DIR/clawdesk.log"
+SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+SERVICE_FILE="$SYSTEMD_USER_DIR/clawdesk.service"
+
+NONINTERACTIVE="${INSTALL_NONINTERACTIVE:-0}"
+TOTAL_STEPS=7
+CURRENT_STEP=0
 
 USE_COLOR=1
 if [ ! -t 1 ] || [ "${NO_COLOR:-}" = "1" ]; then
@@ -36,190 +42,242 @@ else
   C_RED=""
 fi
 
-print_banner() {
-  cat <<'EOF'
+banner() {
+  cat <<'BANNER'
    ██████╗██╗      █████╗ ██╗    ██╗██████╗ ███████╗███████╗██╗  ██╗
   ██╔════╝██║     ██╔══██╗██║    ██║██╔══██╗██╔════╝██╔════╝██║ ██╔╝
   ██║     ██║     ███████║██║ █╗ ██║██║  ██║█████╗  ███████╗█████╔╝
   ██║     ██║     ██╔══██║██║███╗██║██║  ██║██╔══╝  ╚════██║██╔═██╗
   ╚██████╗███████╗██║  ██║╚███╔███╔╝██████╔╝███████╗███████║██║  ██╗
    ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝
-EOF
+BANNER
   printf "%sInstalador oficial · Security-first · Loopback-only%s\n" "$C_CYAN" "$C_RESET"
 }
 
-print_step() {
-  printf "\n%s[%s]%s %s%s%s\n" "$C_DIM" "$(date +"%H:%M:%S")" "$C_RESET" "$C_BOLD" "$1" "$C_RESET"
+log_step() {
+  CURRENT_STEP=$((CURRENT_STEP + 1))
+  printf "\n%s[%s/%s]%s %s\n" "$C_BOLD" "$CURRENT_STEP" "$TOTAL_STEPS" "$C_RESET" "$1"
 }
 
-print_note() {
-  printf "%s%s%s\n" "$C_BLUE" "$1" "$C_RESET"
+log_info() {
+  printf "%s[INFO]%s %s\n" "$C_BLUE" "$C_RESET" "$1"
 }
 
-print_warn() {
-  printf "%s%s%s\n" "$C_YELLOW" "$1" "$C_RESET"
+log_ok() {
+  printf "%s[ OK ]%s %s\n" "$C_GREEN" "$C_RESET" "$1"
 }
 
-print_error() {
-  printf "%s%s%s\n" "$C_RED" "$1" "$C_RESET" >&2
+log_warn() {
+  printf "%s[WARN]%s %s\n" "$C_YELLOW" "$C_RESET" "$1"
+}
+
+log_fail() {
+  printf "%s[FAIL]%s %s\n" "$C_RED" "$C_RESET" "$1" >&2
+}
+
+prompt_default() {
+  local prompt="$1"
+  local default="$2"
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    printf "%s" "$default"
+    return
+  fi
+  read -r -p "$prompt" reply
+  if [ -z "$reply" ]; then
+    printf "%s" "$default"
+  else
+    printf "%s" "$reply"
+  fi
 }
 
 require_cmd() {
-  command -v "$1" >/dev/null 2>&1 || {
-    print_error "Falta el comando requerido: $1"
-    exit 1
-  }
+  if ! command -v "$1" >/dev/null 2>&1; then
+    log_fail "Falta el comando requerido: $1"
+    return 1
+  fi
+  return 0
 }
 
-print_banner
-print_note "Tip: para instalar desde cero usa git clone + ./install.sh"
-
-print_step "Detectando sistema operativo"
-OS_NAME="$(uname -s)"
-IS_WSL=0
-if [ "${CLAWDESK_WSL:-0}" = "1" ]; then
-  IS_WSL=1
-fi
-if grep -qi microsoft /proc/version 2>/dev/null; then
-  IS_WSL=1
-fi
-
-print_note "Sistema: $OS_NAME"
-if [ "$IS_WSL" -eq 1 ]; then
-  print_warn "Entorno: WSL detectado. Recuerda que localhost es compartido con Windows."
-fi
-
-require_cmd node
-require_cmd npm
-require_cmd python3
-
-print_step "Preparando directorios"
-mkdir -p "$INSTALL_DIR" "$APP_DIR" "$SERVER_DIR" "$BIN_DIR" "$CONFIG_DIR"
-USE_EXISTING_CONFIG=0
-
-if [ -f "$BIN_DIR/$APP_NAME" ]; then
-  print_warn "Instalación existente detectada."
-  printf "%s1)%s Actualizar\n" "$C_CYAN" "$C_RESET"
-  printf "%s2)%s Reparar\n" "$C_CYAN" "$C_RESET"
-  printf "%s3)%s Desinstalar\n" "$C_CYAN" "$C_RESET"
-  printf "%s4)%s Continuar\n" "$C_CYAN" "$C_RESET"
-  read -r -p "Selecciona una opción (1-4): " INSTALL_ACTION
-  case "${INSTALL_ACTION:-4}" in
-    1|2)
-      print_note "Continuando con actualización/reparación..."
+install_hint() {
+  case "$1" in
+    node)
+      log_warn "Instala Node.js >= 18 (Ubuntu/WSL: sudo apt-get install -y nodejs npm | macOS: brew install node)"
       ;;
-    3)
-      print_step "Desinstalando"
-      rm -rf "$INSTALL_DIR" "$CONFIG_DIR"
-      rm -f "$BIN_DIR/$APP_NAME"
-      print_note "Desinstalación completa."
-      exit 0
+    npm)
+      log_warn "Instala npm (Ubuntu/WSL: sudo apt-get install -y npm | macOS: brew install node)"
       ;;
-    4)
-      print_note "Continuando..."
+    curl)
+      log_warn "Instala curl (Ubuntu/WSL: sudo apt-get install -y curl | macOS: brew install curl)"
+      ;;
+    tar)
+      log_warn "Instala tar (Ubuntu/WSL: sudo apt-get install -y tar | macOS: brew install gnu-tar)"
+      ;;
+    jq)
+      log_warn "Instala jq si quieres inspección avanzada (Ubuntu/WSL: sudo apt-get install -y jq | macOS: brew install jq)"
+      ;;
+    python3)
+      log_warn "Instala python3 (Ubuntu/WSL: sudo apt-get install -y python3 | macOS: brew install python@3)"
       ;;
     *)
-      print_error "Opción inválida."
-      exit 1
+      log_warn "Instala el comando: $1"
       ;;
   esac
-fi
+}
 
-if [ -f "$CONFIG_FILE" ]; then
-  BACKUP_NAME="$CONFIG_FILE.bak-$(date +%Y%m%d%H%M%S)"
-  print_step "Respaldando configuración existente"
-  cp "$CONFIG_FILE" "$BACKUP_NAME"
-  print_note "Backup: $BACKUP_NAME"
-  read -r -p "¿Deseas reconfigurar ahora? (y/N): " RECONFIGURE
-  if [ "${RECONFIGURE:-N}" != "y" ]; then
-    USE_EXISTING_CONFIG=1
-    print_note "Manteniendo configuración existente."
+check_node_version() {
+  local required_major=18
+  local version
+  version=$(node -p "process.versions.node" 2>/dev/null || echo "0.0.0")
+  local major=${version%%.*}
+  if [ "$major" -lt "$required_major" ]; then
+    log_fail "Node.js $version detectado. Requiere Node.js >= $required_major."
+    install_hint node
+    exit 1
   fi
-fi
+  log_ok "Node.js $version"
+}
 
-print_step "Copiando assets"
-rm -rf "$APP_DIR" "$SERVER_DIR"
-mkdir -p "$APP_DIR" "$SERVER_DIR"
-cp -R app/* "$APP_DIR/"
-cp -R server/* "$SERVER_DIR/"
-cp package.json "$INSTALL_DIR/"
+ensure_repo_layout() {
+  if [ ! -d "$REPO_DIR/app" ] || [ ! -d "$REPO_DIR/server" ] || [ ! -f "$REPO_DIR/package.json" ]; then
+    log_fail "Este script debe ejecutarse desde la raíz del repo ClawDesk."
+    exit 1
+  fi
+}
 
-print_step "Instalando dependencias Node.js"
-( cd "$INSTALL_DIR" && npm install --production )
+detect_wsl() {
+  local is_wsl=0
+  if [ "${CLAWDESK_WSL:-0}" = "1" ]; then
+    is_wsl=1
+  fi
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    is_wsl=1
+  fi
+  echo "$is_wsl"
+}
 
-if [ "$USE_EXISTING_CONFIG" -eq 0 ]; then
-  print_step "Configuración guiada"
-  EXISTING_PORT="4178"
-  EXISTING_GATEWAY_BIND="127.0.0.1"
-  EXISTING_GATEWAY_PORT="18789"
-  EXISTING_TOKEN_PATH="$HOME/.config/openclaw/gateway.auth.token"
+find_openclaw_bin() {
+  for candidate in openclaw clawdbot moltbot; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return
+    fi
+  done
+  echo ""
+}
+
+mask_token() {
+  local token="$1"
+  if [ -z "$token" ]; then
+    echo ""
+    return
+  fi
+  local len=${#token}
+  if [ "$len" -le 4 ]; then
+    echo "****"
+  else
+    echo "****${token: -4}"
+  fi
+}
+
+ensure_config() {
+  mkdir -p "$CONFIG_DIR"
   if [ -f "$CONFIG_FILE" ]; then
-    read -r EXISTING_PORT EXISTING_GATEWAY_BIND EXISTING_GATEWAY_PORT EXISTING_TOKEN_PATH < <(python3 - <<PY
+    local backup="$CONFIG_FILE.bak-$(date +%Y%m%d%H%M%S)"
+    cp "$CONFIG_FILE" "$backup"
+    log_ok "Backup de config creado en $backup"
+  fi
+}
+
+read_config_defaults() {
+  if [ -f "$CONFIG_FILE" ]; then
+    python3 - <<PY
 import json
 from pathlib import Path
 config = json.loads(Path("$CONFIG_FILE").read_text())
-print(config.get("app", {}).get("port", 4178))
-print(config.get("gateway", {}).get("bind", "127.0.0.1"))
-print(config.get("gateway", {}).get("port", 18789))
-print(config.get("gateway", {}).get("token_path", "$HOME/.config/openclaw/gateway.auth.token"))
+app = config.get("app", {})
+profiles = config.get("profiles", {})
+active = config.get("activeProfile", "local")
+profile = profiles.get(active) or profiles.get("local") or {}
+print(app.get("port", 4178))
+print(profile.get("bind", "127.0.0.1"))
+print(profile.get("port", 18789))
+print(profile.get("token_path", str(Path.home() / ".config/openclaw/gateway.auth.token")))
 PY
-)
+  else
+    echo "4178"
+    echo "127.0.0.1"
+    echo "18789"
+    echo "$HOME/.config/openclaw/gateway.auth.token"
   fi
+}
 
-  read -r -p "Puerto para el dashboard (default ${EXISTING_PORT}): " PORT_INPUT
-  PORT="${PORT_INPUT:-$EXISTING_PORT}"
-  if [ "$PORT" -lt 1024 ] || [ "$PORT" -gt 65535 ]; then
-    echo "El puerto debe estar entre 1024 y 65535." >&2
+validate_port() {
+  local label="$1"
+  local port="$2"
+  if [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+    log_fail "$label debe estar entre 1024 y 65535."
     exit 1
   fi
+}
 
+check_port_available() {
+  local port="$1"
   python3 - <<PY
 import socket
-port = int("${PORT}")
+port = int("$port")
 sock = socket.socket()
 try:
     sock.bind(("127.0.0.1", port))
+    print("available")
 except OSError:
-    raise SystemExit(f"El puerto {port} ya está en uso.")
+    print("busy")
 finally:
     sock.close()
 PY
+}
 
-  read -r -p "Bind del gateway (default ${EXISTING_GATEWAY_BIND}): " GATEWAY_BIND_INPUT
-  GATEWAY_BIND="${GATEWAY_BIND_INPUT:-$EXISTING_GATEWAY_BIND}"
-  if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
-    echo "El gateway debe enlazarse a loopback por seguridad." >&2
-    exit 1
-  fi
+check_tcp() {
+  local host="$1"
+  local port="$2"
+  python3 - <<PY
+import socket
+host = "$host"
+port = int("$port")
+try:
+    sock = socket.create_connection((host, port), timeout=1.5)
+    sock.close()
+    print("open")
+except Exception:
+    print("closed")
+PY
+}
 
-  read -r -p "Puerto del gateway (default ${EXISTING_GATEWAY_PORT}): " GATEWAY_PORT_INPUT
-  GATEWAY_PORT="${GATEWAY_PORT_INPUT:-$EXISTING_GATEWAY_PORT}"
-  if [ "$GATEWAY_PORT" -lt 1024 ] || [ "$GATEWAY_PORT" -gt 65535 ]; then
-    echo "El puerto del gateway debe estar entre 1024 y 65535." >&2
-    exit 1
-  fi
-  GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
+write_config() {
+  local app_port="$1"
+  local gateway_bind="$2"
+  local gateway_port="$3"
+  local token_path="$4"
+  local token_value="$5"
 
-  read -r -p "Ruta de gateway.auth.token (default ${EXISTING_TOKEN_PATH}): " TOKEN_PATH_INPUT
-  TOKEN_PATH="${TOKEN_PATH_INPUT:-$EXISTING_TOKEN_PATH}"
-
-  cat > "$CONFIG_FILE" <<CONFIG
-{
+  python3 - <<PY
+import json
+from pathlib import Path
+config = {
   "configVersion": 3,
   "app": {
     "host": "127.0.0.1",
-    "port": $PORT,
-    "theme": "dark"
+    "port": int("$app_port"),
+    "theme": "dark",
   },
   "profiles": {
     "local": {
       "name": "local",
-      "bind": "$GATEWAY_BIND",
-      "port": $GATEWAY_PORT,
-      "token_path": "$TOKEN_PATH",
+      "bind": "$gateway_bind",
+      "port": int("$gateway_port"),
+      "token_path": "$token_path",
       "auth": {
-        "token": ""
-      }
+        "token": "$token_value",
+      },
     }
   },
   "activeProfile": "local",
@@ -240,25 +298,36 @@ PY
       "skills.enable",
       "skills.disable",
       "support.bundle",
-      "secret.rotate"
-    ]
-    ,
-    "enableRemoteProfiles": false,
+      "secret.rotate",
+      "profiles.read",
+      "profiles.activate",
+      "profiles.write",
+      "profiles.delete",
+      "macros.read",
+      "macros.run",
+      "macros.write",
+      "usage.read",
+      "usage.export",
+      "events.read",
+    ],
+    "enableRemoteProfiles": False,
     "allowedRemoteHosts": [],
-    "allowedOrigins": []
+    "allowedOrigins": [],
   },
   "macros": {},
   "observability": {
     "log_poll_ms": 1500,
-    "backoff_max_ms": 8000
-  }
+    "backoff_max_ms": 8000,
+  },
 }
-CONFIG
+Path("$CONFIG_FILE").write_text(json.dumps(config, indent=2))
+PY
   chmod 600 "$CONFIG_FILE"
-fi
+}
 
-if [ ! -f "$SECRET_FILE" ]; then
-  python3 - <<PY
+ensure_secret() {
+  if [ ! -f "$SECRET_FILE" ]; then
+    python3 - <<PY
 import secrets
 from pathlib import Path
 secret = secrets.token_hex(32)
@@ -266,19 +335,56 @@ path = Path("$SECRET_FILE")
 path.write_text(secret)
 path.chmod(0o600)
 PY
-fi
+  fi
+}
 
-print_step "Creando comando ${APP_NAME}"
-cat > "$BIN_DIR/${APP_NAME}" <<'SCRIPT'
+install_service() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    log_warn "systemctl no disponible. Se omite el servicio systemd."
+    return
+  fi
+  mkdir -p "$SYSTEMD_USER_DIR"
+  cat > "$SERVICE_FILE" <<SERVICE
+[Unit]
+Description=ClawDesk local dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$INSTALL_DIR
+ExecStart=/usr/bin/env node $INSTALL_DIR/server/index.js
+Restart=on-failure
+RestartSec=2
+Environment=CLAWDESK_CONFIG_DIR=$CONFIG_DIR
+Environment=CLAWDESK_CONFIG_PATH=$CONFIG_FILE
+Environment=CLAWDESK_SECRET_PATH=$SECRET_FILE
+
+[Install]
+WantedBy=default.target
+SERVICE
+
+  if systemctl --user daemon-reload >/dev/null 2>&1; then
+    log_ok "Servicio systemd (user) instalado"
+  else
+    log_warn "No se pudo recargar systemd --user. Se usará modo manual."
+  fi
+}
+
+create_cli() {
+  local target_dir="$1"
+  mkdir -p "$target_dir"
+  cat > "$INSTALL_DIR/bin/$APP_NAME" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_DIR="$HOME/.config/clawdesk"
+APP_NAME="clawdesk"
 INSTALL_DIR="$HOME/.clawdesk"
+CONFIG_DIR="$HOME/.config/clawdesk"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 SECRET_FILE="$CONFIG_DIR/secret"
 PID_FILE="$CONFIG_DIR/clawdesk.pid"
 LOG_FILE="$CONFIG_DIR/clawdesk.log"
+SERVICE_FILE="$HOME/.config/systemd/user/clawdesk.service"
 
 require_config() {
   if [ ! -f "$CONFIG_FILE" ]; then
@@ -292,25 +398,16 @@ read_config() {
 import json
 from pathlib import Path
 config = json.loads(Path("$CONFIG_FILE").read_text())
-host = config["app"]["host"]
-port = config["app"]["port"]
-profile = None
-if "profiles" in config:
-    profile = config["profiles"].get(config.get("activeProfile", "local"))
-if not profile and "gateway" in config:
-    profile = config.get("gateway")
-token_path = profile.get("token_path") if profile else ""
-bind = profile.get("bind", "127.0.0.1") if profile else "127.0.0.1"
-gateway_port = profile.get("port", 18789) if profile else 18789
-gateway_url = f"http://{bind}:{gateway_port}"
-token = profile.get("auth", {}).get("token", "") if profile else ""
-print(host)
-print(port)
-print(token_path)
-print(gateway_url)
-print(bind)
-print(gateway_port)
-print(token)
+app = config.get("app", {})
+profiles = config.get("profiles", {})
+active = config.get("activeProfile", "local")
+profile = profiles.get(active) or profiles.get("local") or {}
+print(app.get("host", "127.0.0.1"))
+print(app.get("port", 4178))
+print(profile.get("bind", "127.0.0.1"))
+print(profile.get("port", 18789))
+print(profile.get("token_path", ""))
+print(profile.get("auth", {}).get("token", ""))
 PY
 }
 
@@ -330,38 +427,71 @@ PY
   fi
 }
 
+mask_token() {
+  local token="$1"
+  if [ -z "$token" ]; then
+    echo ""
+    return
+  fi
+  local len=${#token}
+  if [ "$len" -le 4 ]; then
+    echo "****"
+  else
+    echo "****${token: -4}"
+  fi
+}
+
 is_running() {
   if [ -f "$PID_FILE" ]; then
-    PID=$(cat "$PID_FILE")
-    if kill -0 "$PID" >/dev/null 2>&1; then
+    local pid
+    pid=$(cat "$PID_FILE")
+    if kill -0 "$pid" >/dev/null 2>&1; then
       return 0
     fi
   fi
   return 1
 }
 
-case "${1:-run}" in
-  run)
-    require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
-    if is_running; then
-      echo "ClawDesk ya está en ejecución (PID $(cat "$PID_FILE"))."
-      exit 0
-    fi
-    echo "Iniciando ClawDesk en http://${HOST}:${PORT}"
-    mkdir -p "$CONFIG_DIR"
-    ( cd "$INSTALL_DIR" && nohup node server/index.js >> "$LOG_FILE" 2>&1 & echo $! > "$PID_FILE" )
-    ;;
-  status)
-    require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
-    if is_running; then
-      echo "✅ Daemon activo (PID $(cat "$PID_FILE"))."
-      SECRET=$(read_secret)
-      python3 - <<PY
+use_systemd() {
+  if [ -f "$SERVICE_FILE" ] && command -v systemctl >/dev/null 2>&1; then
+    systemctl --user status clawdesk >/dev/null 2>&1
+    return 0
+  fi
+  return 1
+}
+
+start_manual() {
+  if is_running; then
+    echo "ClawDesk ya está en ejecución (PID $(cat "$PID_FILE"))."
+    return
+  fi
+  mkdir -p "$CONFIG_DIR"
+  ( cd "$INSTALL_DIR" && nohup node server/index.js >> "$LOG_FILE" 2>&1 & echo $! > "$PID_FILE" )
+  echo "ClawDesk iniciado en background."
+}
+
+stop_manual() {
+  if is_running; then
+    local pid
+    pid=$(cat "$PID_FILE")
+    kill "$pid" || true
+    rm -f "$PID_FILE"
+    echo "ClawDesk detenido."
+  else
+    echo "ClawDesk no está en ejecución."
+  fi
+}
+
+status_manual() {
+  require_config
+  read -r host port gateway_bind gateway_port token_path token_value < <(read_config)
+  if is_running; then
+    echo "✅ Daemon activo (PID $(cat "$PID_FILE"))."
+    secret=$(read_secret)
+    python3 - <<PY
 from urllib.request import Request, urlopen
-url = "http://$HOST:$PORT/api/health"
-req = Request(url, headers={"Authorization": "Bearer $SECRET"})
+url = "http://$host:$port/api/health"
+req = Request(url, headers={"Authorization": "Bearer $secret"})
 try:
     with urlopen(req, timeout=2) as resp:
         data = resp.read().decode()
@@ -369,70 +499,75 @@ try:
 except Exception as exc:
     print("⚠️ API no responde:", exc)
 PY
-    else
-      echo "⚠️ Daemon detenido."
+  else
+    echo "⚠️ Daemon detenido."
+  fi
+}
+
+run_doctor() {
+  require_config
+  read -r host port gateway_bind gateway_port token_path token_value < <(read_config)
+
+  echo "✅ Host: ${host}"
+  echo "✅ Port: ${port}"
+
+  local bin=""
+  for candidate in openclaw clawdbot moltbot; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      bin="$candidate"
+      break
     fi
-    ;;
-  stop)
-    if is_running; then
-      PID=$(cat "$PID_FILE")
-      kill "$PID"
-      rm -f "$PID_FILE"
-      echo "Daemon detenido."
-    else
-      echo "Daemon no está en ejecución."
-    fi
-    ;;
-  open)
-    require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
-    echo "Abre en tu navegador: http://${HOST}:${PORT}"
-    ;;
-  config)
-    require_config
-    cat "$CONFIG_FILE"
-    ;;
-  doctor)
-    require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
-    echo "✅ Host: ${HOST}"
-    echo "✅ Port: ${PORT}"
-    if command -v openclaw >/dev/null 2>&1; then
-      BIN="openclaw"
-    elif command -v clawdbot >/dev/null 2>&1; then
-      BIN="clawdbot"
-    elif command -v moltbot >/dev/null 2>&1; then
-      BIN="moltbot"
-    else
-      BIN=""
-    fi
-    if [ -n "$BIN" ]; then
-      VERSION=$("$BIN" --version 2>/dev/null || true)
-      echo "✅ ${BIN} detectado ${VERSION}"
-    else
-      echo "⚠️ openclaw/clawdbot/moltbot no está en PATH"
-      echo "   Instala OpenClaw para habilitar acciones reales."
-    fi
-    TOKEN_SOURCE="missing"
-    if [ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
-      TOKEN_SOURCE="env"
-    elif [ -n "$CONFIG_TOKEN" ]; then
-      TOKEN_SOURCE="config"
-    elif [ -f "$TOKEN_PATH" ]; then
-      TOKEN_SOURCE="file"
-    fi
-    if [ "$TOKEN_SOURCE" = "file" ]; then
-      echo "✅ Token encontrado en ${TOKEN_PATH} (source: file)"
-    elif [ "$TOKEN_SOURCE" = "env" ]; then
-      echo "✅ Token detectado por env (OPENCLAW_GATEWAY_TOKEN)"
-    elif [ "$TOKEN_SOURCE" = "config" ]; then
-      echo "✅ Token detectado en config.json"
-    else
-      echo "⚠️ Token no encontrado (source: missing)"
-    fi
+  done
+  if [ -n "$bin" ]; then
+    local version
+    version=$($bin --version 2>/dev/null || true)
+    echo "✅ ${bin} detectado ${version}"
+  else
+    echo "⚠️ openclaw/clawdbot/moltbot no está en PATH"
+    echo "   Instala OpenClaw para habilitar acciones reales."
+  fi
+
+  local token_source="missing"
+  if [ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
+    token_source="env"
+  elif [ -n "$token_value" ]; then
+    token_source="config"
+  elif [ -n "$token_path" ] && [ -f "$token_path" ]; then
+    token_source="file"
+  fi
+
+  if [ "$token_source" = "file" ]; then
+    token_value=$(cat "$token_path")
+    echo "✅ Token encontrado en ${token_path} (source: file)"
+  elif [ "$token_source" = "env" ]; then
+    token_value="$OPENCLAW_GATEWAY_TOKEN"
+    echo "✅ Token detectado por env (OPENCLAW_GATEWAY_TOKEN)"
+  elif [ "$token_source" = "config" ]; then
+    echo "✅ Token detectado en config.json"
+  else
+    echo "⚠️ Token no encontrado (source: missing)"
+  fi
+
+  if [ -n "$token_value" ] && [ "$token_source" != "config" ]; then
     python3 - <<PY
+import json
+from pathlib import Path
+config_path = Path("$CONFIG_FILE")
+config = json.loads(config_path.read_text())
+profiles = config.get("profiles", {})
+active = config.get("activeProfile", "local")
+profile = profiles.get(active) or profiles.get("local") or {}
+profile.setdefault("auth", {})["token"] = "$token_value"
+profiles[active] = profile
+config["profiles"] = profiles
+config_path.write_text(json.dumps(config, indent=2))
+PY
+    echo "✅ Token sincronizado en config.json (oculto: $(mask_token "$token_value"))"
+  fi
+
+  python3 - <<PY
 import socket
-port = int("${PORT}")
+port = int("$port")
 sock = socket.socket()
 try:
     sock.bind(("127.0.0.1", port))
@@ -442,15 +577,89 @@ except OSError:
 finally:
     sock.close()
 PY
-    PORT_SOURCE="config"
-    if [ -n "${OPENCLAW_GATEWAY_PORT:-}" ]; then
-      PORT_SOURCE="env"
-      GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT}"
-      GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
+
+  local port_source="config"
+  if [ -n "${OPENCLAW_GATEWAY_PORT:-}" ]; then
+    port_source="env"
+    gateway_port="$OPENCLAW_GATEWAY_PORT"
+  fi
+  echo "Gateway Bind: ${gateway_bind}"
+  echo "Gateway Port: ${gateway_port} (source: ${port_source})"
+
+  python3 - <<PY
+import socket
+import time
+host = "$gateway_bind"
+port = int("$gateway_port")
+start = time.time()
+try:
+    sock = socket.create_connection((host, port), timeout=1.5)
+    sock.close()
+    duration = int((time.time() - start) * 1000)
+    print(f"✅ Gateway TCP OK ({duration} ms)")
+except Exception as exc:
+    print(f"⚠️ Gateway no responde en {host}:{port} ({exc})")
+PY
+
+  if [ -n "$bin" ]; then
+    if OPENCLAW_GATEWAY_PORT="$gateway_port" OPENCLAW_GATEWAY_TOKEN="$token_value" $bin gateway status >/dev/null 2>&1; then
+      echo "✅ Gateway status OK (via ${bin})"
+    else
+      echo "⚠️ Gateway status falló (via ${bin})"
     fi
-    echo "Gateway Bind: ${GATEWAY_BIND}"
-    echo "Gateway Port: ${GATEWAY_PORT} (source: ${PORT_SOURCE})"
-    echo "Gateway URL: ${GATEWAY_URL}"
+  fi
+
+  if [ -z "$token_value" ]; then
+    echo "Sugerencia: export OPENCLAW_GATEWAY_TOKEN=... o coloca el token en ${token_path}."
+  fi
+}
+
+case "${1:-run}" in
+  run|start)
+    require_config
+    if use_systemd; then
+      systemctl --user start clawdesk
+      echo "ClawDesk iniciado (systemd user)."
+    else
+      start_manual
+    fi
+    ;;
+  restart)
+    require_config
+    if use_systemd; then
+      systemctl --user restart clawdesk
+      echo "ClawDesk reiniciado (systemd user)."
+    else
+      stop_manual
+      start_manual
+    fi
+    ;;
+  status)
+    if use_systemd; then
+      systemctl --user status clawdesk --no-pager
+    else
+      status_manual
+    fi
+    ;;
+  stop)
+    if use_systemd; then
+      systemctl --user stop clawdesk
+      echo "ClawDesk detenido (systemd user)."
+    else
+      stop_manual
+    fi
+    ;;
+  open)
+    require_config
+    read -r host port gateway_bind gateway_port token_path token_value < <(read_config)
+    echo "Abre en tu navegador: http://${host}:${port}"
+    ;;
+  config)
+    require_config
+    cat "$CONFIG_FILE"
+    ;;
+  doctor)
+    run_doctor
     ;;
   secret)
     require_config
@@ -469,41 +678,162 @@ PY
     echo "Secret rotado. Reinicia el daemon y recarga el dashboard."
     ;;
   uninstall)
-    echo "Esto eliminará ${INSTALL_DIR} y ${CONFIG_DIR}. Continuar? (y/N)"
-    read -r CONFIRM
-    if [ "${CONFIRM:-N}" != "y" ]; then
+    echo "Esto eliminará $INSTALL_DIR y $CONFIG_DIR. Continuar? (y/N)"
+    read -r confirm
+    if [ "${confirm:-N}" != "y" ]; then
       echo "Cancelado."
       exit 0
     fi
-    if is_running; then
-      PID=$(cat "$PID_FILE")
-      kill "$PID" || true
+    if use_systemd; then
+      systemctl --user stop clawdesk || true
+      systemctl --user disable clawdesk || true
+    else
+      stop_manual
     fi
     rm -rf "$INSTALL_DIR" "$CONFIG_DIR"
-    rm -f "$HOME/.local/bin/clawdesk"
+    rm -f "$HOME/.local/bin/clawdesk" "/usr/local/bin/clawdesk"
     echo "Desinstalación completa."
     ;;
   *)
-    echo "Uso: clawdesk [run|status|stop|open|config|doctor|secret rotate|uninstall]"
+    echo "Uso: clawdesk [run|start|stop|restart|status|open|config|doctor|secret rotate|uninstall]"
     exit 1
     ;;
 esac
 SCRIPT
-chmod +x "$BIN_DIR/${APP_NAME}"
+  chmod +x "$INSTALL_DIR/bin/$APP_NAME"
+  ln -sf "$INSTALL_DIR/bin/$APP_NAME" "$target_dir/$APP_NAME"
+  log_ok "Comando instalado en $target_dir/$APP_NAME"
+}
 
-PORT="4178"
-if [ -f "$CONFIG_FILE" ]; then
-  PORT="$(python3 - <<PY
-import json
-from pathlib import Path
-config = json.loads(Path("$CONFIG_FILE").read_text())
-print(config.get("app", {}).get("port", 4178))
-PY
-)"
+banner
+log_info "Tip: instala con git clone + bash install.sh"
+
+log_step "Detectando sistema y dependencias"
+ensure_repo_layout
+
+OS_NAME="$(uname -s)"
+IS_WSL="$(detect_wsl)"
+log_info "Sistema: $OS_NAME"
+if [ "$IS_WSL" = "1" ]; then
+  log_warn "WSL detectado. Recuerda que localhost es compartido con Windows."
 fi
 
-print_step "Instalación completa"
+missing=0
+for cmd in bash node npm curl tar python3; do
+  if ! require_cmd "$cmd"; then
+    install_hint "$cmd"
+    missing=1
+  else
+    log_ok "${cmd} disponible"
+  fi
+done
+if [ "$missing" -eq 1 ]; then
+  log_fail "Dependencias faltantes. Instálalas y reintenta."
+  exit 1
+fi
+check_node_version
+
+log_step "Preparando directorios"
+mkdir -p "$INSTALL_DIR" "$INSTALL_DIR/bin" "$APP_DIR" "$SERVER_DIR" "$BIN_DIR_LOCAL" "$CONFIG_DIR"
+if [ ! -w "$INSTALL_DIR" ]; then
+  log_fail "No hay permisos de escritura en $INSTALL_DIR"
+  exit 1
+fi
+
+log_step "Copiando archivos de la app"
+rm -rf "$APP_DIR" "$SERVER_DIR"
+mkdir -p "$APP_DIR" "$SERVER_DIR"
+cp -R "$REPO_DIR/app/." "$APP_DIR/"
+cp -R "$REPO_DIR/server/." "$SERVER_DIR/"
+cp "$REPO_DIR/package.json" "$INSTALL_DIR/"
+cp "$REPO_DIR/package-lock.json" "$INSTALL_DIR/" 2>/dev/null || true
+log_ok "Assets copiados"
+
+log_step "Instalando dependencias Node.js"
+if [ -f "$INSTALL_DIR/package-lock.json" ]; then
+  ( cd "$INSTALL_DIR" && npm ci --omit=dev )
+else
+  ( cd "$INSTALL_DIR" && npm install --omit=dev )
+fi
+log_ok "Dependencias instaladas"
+
+log_step "Configuración y auto-sincronización OpenClaw"
+ensure_config
+read -r DEFAULT_APP_PORT DEFAULT_GATEWAY_BIND DEFAULT_GATEWAY_PORT DEFAULT_TOKEN_PATH < <(read_config_defaults)
+
+APP_PORT=$(prompt_default "Puerto para el dashboard (default ${DEFAULT_APP_PORT}): " "$DEFAULT_APP_PORT")
+validate_port "Puerto de dashboard" "$APP_PORT"
+
+if [ "$(check_port_available "$APP_PORT")" = "busy" ]; then
+  log_fail "El puerto $APP_PORT ya está en uso."
+  exit 1
+fi
+
+GATEWAY_BIND=$(prompt_default "Bind del gateway (default ${DEFAULT_GATEWAY_BIND}): " "$DEFAULT_GATEWAY_BIND")
+if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
+  log_fail "El gateway debe enlazarse a loopback por seguridad."
+  exit 1
+fi
+
+GATEWAY_PORT=$(prompt_default "Puerto del gateway (default ${DEFAULT_GATEWAY_PORT}): " "$DEFAULT_GATEWAY_PORT")
+validate_port "Puerto del gateway" "$GATEWAY_PORT"
+
+TOKEN_PATH=$(prompt_default "Ruta de gateway.auth.token (default ${DEFAULT_TOKEN_PATH}): " "$DEFAULT_TOKEN_PATH")
+
+OPENCLAW_BIN=$(find_openclaw_bin)
+if [ -n "$OPENCLAW_BIN" ]; then
+  log_ok "${OPENCLAW_BIN} detectado"
+else
+  log_warn "OpenClaw no encontrado en PATH."
+fi
+
+TOKEN_VALUE=""
+TOKEN_SOURCE="missing"
+if [ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
+  TOKEN_VALUE="$OPENCLAW_GATEWAY_TOKEN"
+  TOKEN_SOURCE="env"
+elif [ -n "$TOKEN_PATH" ] && [ -f "$TOKEN_PATH" ]; then
+  TOKEN_VALUE="$(cat "$TOKEN_PATH")"
+  TOKEN_SOURCE="file"
+fi
+
+if [ -n "$TOKEN_VALUE" ]; then
+  log_ok "Token detectado (${TOKEN_SOURCE}), oculto: $(mask_token "$TOKEN_VALUE")"
+else
+  log_warn "Token no encontrado. Puedes exportar OPENCLAW_GATEWAY_TOKEN o crear $TOKEN_PATH"
+fi
+
+write_config "$APP_PORT" "127.0.0.1" "$GATEWAY_PORT" "$TOKEN_PATH" "$TOKEN_VALUE"
+ensure_secret
+
+if [ "$(check_tcp "127.0.0.1" "$GATEWAY_PORT")" = "open" ]; then
+  log_ok "Gateway responde en 127.0.0.1:$GATEWAY_PORT"
+else
+  log_warn "Gateway no responde en 127.0.0.1:$GATEWAY_PORT"
+fi
+
+if [ -n "$OPENCLAW_BIN" ] && [ -n "$TOKEN_VALUE" ]; then
+  if OPENCLAW_GATEWAY_PORT="$GATEWAY_PORT" OPENCLAW_GATEWAY_TOKEN="$TOKEN_VALUE" "$OPENCLAW_BIN" gateway status >/dev/null 2>&1; then
+    log_ok "Gateway status OK (via ${OPENCLAW_BIN})"
+  else
+    log_warn "No se pudo verificar status del gateway (via ${OPENCLAW_BIN})"
+  fi
+fi
+
+log_step "Instalando comando y servicio"
+TARGET_BIN_DIR="$BIN_DIR_LOCAL"
+if [ -w "$BIN_DIR_GLOBAL" ]; then
+  TARGET_BIN_DIR="$BIN_DIR_GLOBAL"
+fi
+create_cli "$TARGET_BIN_DIR"
+install_service
+
+log_step "Instalación completa"
 printf "\n%s%sInstalación completa%s\n" "$C_GREEN" "$C_BOLD" "$C_RESET"
-printf "%sEjecuta:%s %s run\n" "$C_CYAN" "$C_RESET" "$APP_NAME"
-printf "%sURL local:%s http://127.0.0.1:%s\n" "$C_CYAN" "$C_RESET" "$PORT"
+printf "%sNext steps:%s\n" "$C_CYAN" "$C_RESET"
+printf "  - %s run\n" "$APP_NAME"
+printf "  - %s status\n" "$APP_NAME"
+printf "  - %s doctor\n" "$APP_NAME"
+printf "  - %s open\n" "$APP_NAME"
+printf "%sURL local:%s http://127.0.0.1:%s\n" "$C_CYAN" "$C_RESET" "$APP_PORT"
 printf "%sConfig:%s %s\n" "$C_CYAN" "$C_RESET" "$CONFIG_FILE"

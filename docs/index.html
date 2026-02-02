@@ -3,104 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawDesk OS · Retro-OS 2000 production-ready</title>
+    <title>ClawDesk · Instalación</title>
     <link rel="icon" href="assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="window">
-      <header class="titlebar">
-        <div class="brand">
-          <img src="assets/brand/logo-brain.svg" alt="ClawDesk logo" />
-          <div>
-            <h1>ClawDesk OS</h1>
-            <small class="muted">Retro-OS 2000 minimal · Security-first control plane</small>
-          </div>
-        </div>
-        <span class="lcd">Docs-only</span>
+    <main class="simple">
+      <header>
+        <h1>ClawDesk</h1>
+        <p class="muted">Instalación oficial (git clone + install.sh)</p>
       </header>
 
-      <nav class="tabstrip">
-        <a href="#install">Instalar</a>
-        <a href="#features">Novedades v2.0.0</a>
-        <a href="#security">Seguridad</a>
-        <a href="dashboard/">Dashboard demo</a>
-      </nav>
-
-      <section class="section" id="install">
-        <div class="grid-2">
-          <div class="card">
-            <h2>Instalación rápida</h2>
-            <p class="muted">
-              Esta landing no llama a localhost. Para el panel real ejecuta en tu host local:
-            </p>
-            <div class="code">
-              git clone https://github.com/smouj/ClawDesk.git
-              <br />
-              cd ClawDesk
-              <br />
-              ./install.sh
-            </div>
-            <p class="muted">Instalador interactivo con comprobaciones y defaults seguros.</p>
-          </div>
-          <div class="card">
-            <h2>Modo remoto</h2>
-            <p class="muted">Si necesitas automatizar, usa el instalador remoto (git clone + install.sh).</p>
-            <a
-              class="btn"
-              href="https://github.com/smouj/ClawDesk"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Ver repositorio
-            </a>
-          </div>
-        </div>
+      <section class="card">
+        <h2>1) Clonar el repositorio</h2>
+        <pre><code>git clone https://github.com/smouj/ClawDesk.git
+cd ClawDesk</code></pre>
       </section>
 
-      <section class="section" id="features">
-        <div class="grid-2">
-          <div class="card">
-            <h2>v2.0.0 · CI sólido + Smoke real</h2>
-            <p class="muted">Lint + format + tests + smoke con healthcheck y puertos dinámicos.</p>
-            <div class="lcd">ci green</div>
-          </div>
-          <div class="card">
-            <h2>Retro-OS polish</h2>
-            <p class="muted">Tokens unificados, contraste AA y navegación por teclado.</p>
-            <div class="lcd">accessibility ++</div>
-          </div>
-          <div class="card">
-            <h2>Logs más seguros</h2>
-            <p class="muted">Redacción extra para bearer tokens y api keys.</p>
-            <div class="lcd">redaction+</div>
-          </div>
-          <div class="card">
-            <h2>Installer UI mejorado</h2>
-            <p class="muted">ASCII banner, pasos guiados y resumen final.</p>
-            <div class="lcd">installer++</div>
-          </div>
-        </div>
+      <section class="card">
+        <h2>2) Ejecutar el instalador</h2>
+        <pre><code>bash install.sh</code></pre>
+        <p class="muted">El instalador detecta dependencias, configura OpenClaw y crea el comando <strong>clawdesk</strong>.</p>
       </section>
 
-      <section class="section" id="security">
-        <div class="grid-3">
-          <div class="card">
-            <h3>Loopback-first</h3>
-            <p class="muted">Host allowlist: localhost/127.0.0.1 por defecto.</p>
-          </div>
-          <div class="card">
-            <h3>Redacción total</h3>
-            <p class="muted">Tokens y secretos redacted en logs, timeline y exports.</p>
-          </div>
-          <div class="card">
-            <h3>Remote seguro</h3>
-            <p class="muted">Acceso remoto solo por túneles cifrados (Tailscale/WireGuard/SSH).</p>
-          </div>
-        </div>
+      <section class="card">
+        <h2>3) Comandos útiles</h2>
+        <pre><code>clawdesk run
+clawdesk status
+clawdesk doctor
+clawdesk open</code></pre>
       </section>
 
-      <footer>ClawDesk OS · v2.0.0 · Retro-OS production-ready.</footer>
-    </div>
+      <footer class="muted">ClawDesk · instalación local · loopback only</footer>
+    </main>
   </body>
 </html>
