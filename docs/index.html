@@ -32,6 +32,18 @@
         </div>
       </section>
 
+      <section class="section" id="galeria">
+        <h3>Galería (placeholders)</h3>
+        <div class="grid-2">
+          <div class="card screenshot-placeholder">[Screenshot · Inicio / Mission Control]</div>
+          <div class="card screenshot-placeholder">[Screenshot · Agentes & Bots]</div>
+          <div class="card screenshot-placeholder">[Screenshot · Skills Center]</div>
+          <div class="card screenshot-placeholder">[Screenshot · Config Center]</div>
+          <div class="card screenshot-placeholder">[Screenshot · Security Center]</div>
+          <div class="card screenshot-placeholder">[Screenshot · Logs & Diagnostics]</div>
+        </div>
+      </section>
+
       <section class="section" id="quickstart">
         <h3>Quickstart</h3>
         <div class="grid-2">
@@ -39,6 +51,12 @@
             <h4>One-liner remoto (stable)</h4>
             <pre><code>curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash</code></pre>
             <p class="muted">Instala la última release estable con verificación SHA256.</p>
+          </div>
+          <div class="card">
+            <h4>Nightly (main)</h4>
+            <pre><code>CLAWDESK_CHANNEL=nightly \\
+curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash</code></pre>
+            <p class="muted">Incluye cambios no publicados en releases.</p>
           </div>
           <div class="card">
             <h4>Git clone + install.sh</h4>
@@ -58,12 +76,12 @@ bash install.sh</code></pre>
             <p class="muted">Estado del gateway, latencia, token detectado y última actividad.</p>
           </div>
           <div class="card">
-            <h4>Acciones rápidas</h4>
-            <p class="muted">Start/Stop/Restart con políticas de allow-actions.</p>
+            <h4>Agentes & Skills</h4>
+            <p class="muted">Gestión interactiva de agentes y skills con requisitos claros.</p>
           </div>
           <div class="card">
-            <h4>Logs pro</h4>
-            <p class="muted">Filtro, pausa, descarga y jerarquía visual clara.</p>
+            <h4>Config & Seguridad</h4>
+            <p class="muted">Editor JSON con backups, audit de seguridad y logs redactados.</p>
           </div>
         </div>
       </section>

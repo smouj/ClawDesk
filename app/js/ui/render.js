@@ -265,3 +265,160 @@ export const renderSettings = (state) => {
     remoteStatus.className = `badge ${enabled ? "ok" : "warn"}`;
   }
 };
+
+export const renderAgents = (state) => {
+  const list = document.getElementById("agents-list");
+  const empty = document.getElementById("agents-empty");
+  const source = document.getElementById("agents-source");
+  if (!list) return;
+  const data = state.agentsData;
+  if (source) {
+    source.textContent = data?.source || "n/a";
+  }
+  if (!data?.agents?.length) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+  list.innerHTML = data.agents
+    .map(
+      (agent) => `
+      <div class="card">
+        <div class="section-header">
+          <h4>${agent.name}</h4>
+          <span class="badge ${agent.default ? "ok" : "warn"}">${
+        agent.default ? "predeterminado" : "secundario"
+      }</span>
+        </div>
+        <p class="muted">${agent.provider || "proveedor n/a"} · ${
+        agent.model || "modelo n/a"
+      }</p>
+        <p class="muted">${agent.storage_path || "sin ruta"} · ${
+        agent.disabled ? "deshabilitado" : "activo"
+      }</p>
+        <div class="inline wrap">
+          <button class="btn secondary" data-action="default" data-name="${
+            agent.name
+          }">Marcar default</button>
+          <button class="btn ghost" data-action="export" data-name="${
+            agent.name
+          }">Exportar</button>
+          <button class="btn danger" data-action="delete" data-name="${agent.name}">Eliminar</button>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+};
+
+export const renderSkills = (state) => {
+  const list = document.getElementById("skills-list");
+  const empty = document.getElementById("skills-empty");
+  const source = document.getElementById("skills-source");
+  const requirements = document.getElementById("skills-requirements");
+  if (!list) return;
+  const data = state.skillsData;
+  if (source) source.textContent = data?.source || "n/a";
+  if (!data?.skills?.length) {
+    list.innerHTML = "";
+    if (empty) empty.style.display = "block";
+    if (requirements) requirements.textContent = "Sin requisitos pendientes.";
+    return;
+  }
+  if (empty) empty.style.display = "none";
+  const missingCommands = [];
+  const labelMap = {
+    enabled: "habilitada",
+    disabled: "deshabilitada",
+    missing: "faltan requisitos",
+  };
+  list.innerHTML = data.skills
+    .map((skill) => {
+      if (skill.missing_requirements?.length) {
+        skill.missing_requirements.forEach((req) => {
+          if (req.command) missingCommands.push(req.command);
+        });
+      }
+      return `
+      <div class="card">
+        <div class="section-header">
+          <h4>${skill.name}</h4>
+          <span class="badge ${
+            skill.status === "enabled" ? "ok" : skill.status === "missing" ? "warn" : ""
+          }">${labelMap[skill.status] || skill.status}</span>
+        </div>
+        <p class="muted">${skill.description || "Sin descripción"}</p>
+        <div class="inline wrap">
+          <button class="btn secondary" data-action="toggle" data-name="${
+            skill.name
+          }" data-enabled="${!skill.enabled}">
+            ${skill.enabled ? "Desactivar" : "Activar"}
+          </button>
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+  if (requirements) {
+    requirements.textContent = missingCommands.length
+      ? missingCommands.join("\n")
+      : "Sin requisitos pendientes.";
+  }
+};
+
+export const renderConfig = (state) => {
+  const config = state.configDetail || state.config;
+  if (!config) return;
+  const clawdeskText = document.getElementById("clawdesk-config");
+  const openclawText = document.getElementById("openclaw-config");
+  const perms = document.getElementById("config-perms");
+  const openclawPerms = document.getElementById("openclaw-perms");
+  if (clawdeskText && config.clawdesk?.config) {
+    clawdeskText.value = JSON.stringify(config.clawdesk.config, null, 2);
+  }
+  if (openclawText) {
+    openclawText.value = config.openclaw?.config ? JSON.stringify(config.openclaw.config, null, 2) : "";
+  }
+  if (perms && config.clawdesk?.permissions) {
+    perms.textContent = config.clawdesk.permissions.mode;
+    perms.className = `badge ${config.clawdesk.permissions.worldReadable ? "warn" : "ok"}`;
+  }
+  if (openclawPerms && config.openclaw?.permissions) {
+    openclawPerms.textContent = config.openclaw.permissions.mode;
+    openclawPerms.className = `badge ${
+      config.openclaw.permissions.worldReadable ? "warn" : "ok"
+    }`;
+  }
+};
+
+export const renderSecurity = (state) => {
+  const output = document.getElementById("security-output");
+  if (!output) return;
+  output.textContent = state.securityReport || "Ejecuta un audit o doctor para ver resultados.";
+};
+
+export const renderDiagnostics = (state) => {
+  const diag = document.getElementById("diagnostics-summary");
+  const healthChecks = document.getElementById("health-checks");
+  if (!diag || !healthChecks) return;
+  const health = state.health;
+  if (!health) {
+    diag.innerHTML = "<p class='muted'>Sin datos.</p>";
+    healthChecks.innerHTML = "<p class='muted'>Sin datos.</p>";
+    return;
+  }
+  diag.innerHTML = `
+    <p><strong>Versión:</strong> ${health.version}</p>
+    <p><strong>Uptime:</strong> ${health.uptime_s}s</p>
+    <p><strong>OS:</strong> ${health.system?.platform} ${health.system?.release}</p>
+    <p><strong>WSL:</strong> ${health.system?.is_wsl ? "sí" : "no"}</p>
+  `;
+  healthChecks.innerHTML = `
+    <p><strong>Gateway:</strong> ${health.gateway?.status || "n/a"}</p>
+    <p><strong>OpenClaw:</strong> ${
+      health.openclaw?.version || (health.openclaw?.detected ? "detectado" : "no detectado")
+    }</p>
+    <p><strong>Latencia:</strong> ${health.gateway?.latency_ms || "--"} ms</p>
+  `;
+};

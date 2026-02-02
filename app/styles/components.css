@@ -335,6 +335,27 @@ textarea::placeholder {
   color: var(--muted);
 }
 
+.stack {
+  display: grid;
+  gap: 10px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+  margin: 12px 0;
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.list li {
+  margin-bottom: 8px;
+}
+
 .modal {
   position: fixed;
   inset: 0;
