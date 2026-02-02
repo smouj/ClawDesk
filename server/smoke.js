@@ -18,9 +18,25 @@ const { createServer } = require("./server");
 const config = {
   configVersion: 2,
   app: { host: "127.0.0.1", port: 5180, theme: "dark" },
-  gateway: { url: "http://127.0.0.1:18789", token_path: "/tmp/does-not-exist" },
+  gateway: { url: "http://127.0.0.1:18789", bind: "127.0.0.1", port: 18789, token_path: "/tmp/does-not-exist", auth: { token: "" } },
   security: {
-    allow_actions: ["gateway.status", "gateway.logs", "agent.list", "agent.start", "agent.stop", "agent.restart", "skills.list", "skills.enable", "skills.disable", "support.bundle"]
+    allow_actions: [
+      "gateway.status",
+      "gateway.logs",
+      "gateway.probe",
+      "gateway.start",
+      "gateway.stop",
+      "gateway.restart",
+      "agent.list",
+      "agent.start",
+      "agent.stop",
+      "agent.restart",
+      "skills.list",
+      "skills.enable",
+      "skills.disable",
+      "support.bundle",
+      "secret.rotate"
+    ]
   },
   observability: { log_poll_ms: 1500, backoff_max_ms: 8000 }
 };

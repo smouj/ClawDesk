@@ -3,255 +3,114 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="clawdesk-api-token" content="__CLAWDESK_TOKEN__" />
-    <title>ClawDesk · Mission Control</title>
+    <title>ClawDesk · NeuroCircuit War-Room Edition</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="theme-dark">
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-mark">🦞</div>
-          <div class="brand-text">
-            <span>ClawDesk</span>
-            <small>OpenClaw Mission Control</small>
-          </div>
+  <body class="war-room">
+    <div class="scanlines"></div>
+    <header class="site-header">
+      <div class="brand">
+        <div>
+          <span class="brand-name">ClawDesk</span>
+          <small>NeuroCircuit War-Room Edition</small>
         </div>
-        <nav class="nav">
-          <button class="nav-item active" data-view="dashboard">Dashboard</button>
-          <button class="nav-item" data-view="agents">Agents</button>
-          <button class="nav-item" data-view="skills">Skills</button>
-          <button class="nav-item" data-view="logs">Logs</button>
-          <button class="nav-item" data-view="settings">Settings</button>
-        </nav>
-        <div class="profile-switch">
-          <p>Perfil</p>
-          <div class="toggle">
-            <button class="toggle-btn active" data-profile="operator">Human Operator</button>
-            <button class="toggle-btn" data-profile="builder">Agent Builder</button>
-          </div>
-        </div>
-        <div class="sidebar-footer">
-          <button class="ghost-btn" id="launch-wizard">Connection Wizard</button>
-          <button class="ghost-btn" id="support-bundle">Generate Support Bundle</button>
-        </div>
-      </aside>
-
-      <main class="content">
-        <header class="topbar">
-          <div>
-            <h1 id="view-title">Mission Control</h1>
-            <p id="view-subtitle">Estado operativo de tu gateway y agentes.</p>
-          </div>
-          <div class="topbar-actions">
-            <button class="primary" id="open-control-ui">Open Control UI</button>
-            <button class="secondary" id="refresh-view">Refresh</button>
-          </div>
-        </header>
-
-        <section class="view active" data-view="dashboard">
-          <section class="status-grid">
-            <article class="card status-card">
-              <div class="card-header">
-                <h3>Gateway</h3>
-                <span class="badge" id="gateway-status">--</span>
-              </div>
-              <p>Estado: <strong id="gateway-summary">Sin datos</strong></p>
-              <p>Última actividad: <strong id="last-activity">--</strong></p>
-              <div class="card-actions">
-                <button class="mini" id="gateway-refresh">Refresh</button>
-              </div>
-            </article>
-            <article class="card status-card">
-              <div class="card-header">
-                <h3>Agentes activos</h3>
-                <span class="badge warn" id="agent-count">0</span>
-              </div>
-              <p>Agentes listados: <strong id="agent-total">0</strong></p>
-              <p>OpenClaw: <strong id="openclaw-version">--</strong></p>
-              <div class="card-actions">
-                <button class="mini" data-nav="agents">Ver agentes</button>
-              </div>
-            </article>
-            <article class="card status-card">
-              <div class="card-header">
-                <h3>Seguridad</h3>
-                <span class="badge ok">Local-only</span>
-              </div>
-              <p>Auth API: <strong id="auth-status">Activo</strong></p>
-              <p>Allow-actions: <strong id="allow-actions">--</strong></p>
-              <div class="card-actions">
-                <button class="mini" data-nav="settings">Revisar</button>
-              </div>
-            </article>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Security Center</h2>
-              <p>Hardening activo + acceso remoto seguro sin exponer tu host.</p>
-            </div>
-            <div class="security-grid">
-              <article class="card">
-                <div class="card-header">
-                  <h3>Modo local-only</h3>
-                  <span class="badge ok">127.0.0.1</span>
-                </div>
-                <p>El dashboard solo escucha en la interfaz local. ✅</p>
-                <p class="muted">Si necesitas acceso remoto, usa túneles cifrados.</p>
-              </article>
-              <article class="card">
-                <div class="card-header">
-                  <h3>Remote Access (Seguro)</h3>
-                  <span class="badge">Túneles</span>
-                </div>
-                <p>Recomendado: Tailscale · WireGuard · SSH Tunneling.</p>
-                <div class="card-actions">
-                  <button class="mini" id="tailscale-guide">Guía Tailscale</button>
-                  <button class="mini" id="ssh-guide">Guía SSH</button>
-                </div>
-              </article>
-              <article class="card">
-                <div class="card-header">
-                  <h3>Allow-Actions</h3>
-                  <span class="badge ok">Estricto</span>
-                </div>
-                <p>Solo acciones semánticas permitidas.</p>
-                <div class="card-actions">
-                  <button class="mini" data-nav="settings">Revisar reglas</button>
-                </div>
-              </article>
-            </div>
-          </section>
-        </section>
-
-        <section class="view" data-view="agents">
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Agentes</h2>
-              <div class="filters">
-                <input type="search" id="agent-search" placeholder="Buscar por nombre o id..." />
-                <select id="agent-filter">
-                  <option value="all">Estado: todos</option>
-                  <option value="ok">OK</option>
-                  <option value="warn">WARN</option>
-                  <option value="error">ERROR</option>
-                </select>
-              </div>
-            </div>
-            <div class="agent-grid" id="agent-list"></div>
-            <p class="muted" id="agent-empty">Sin datos de agentes. Verifica OpenClaw.</p>
-          </section>
-        </section>
-
-        <section class="view" data-view="skills">
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Skills</h2>
-              <p>Habilita o deshabilita skills registradas en OpenClaw.</p>
-            </div>
-            <div class="agent-grid" id="skill-list"></div>
-            <p class="muted" id="skill-empty">Sin datos de skills. Verifica OpenClaw.</p>
-          </section>
-        </section>
-
-        <section class="view" data-view="logs">
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Observabilidad</h2>
-              <p>Logs en vivo, filtros y soporte rápido.</p>
-            </div>
-            <div class="card log-card">
-              <div class="filters">
-                <select id="log-level">
-                  <option value="all">Nivel: todos</option>
-                  <option value="INFO">INFO</option>
-                  <option value="WARN">WARN</option>
-                  <option value="ERROR">ERROR</option>
-                </select>
-                <input type="search" id="log-search" placeholder="Buscar en logs..." />
-                <button class="mini" id="refresh-logs">Actualizar</button>
-              </div>
-              <div class="log-stream" id="log-stream"></div>
-              <div class="card-actions">
-                <button class="mini" id="export-logs">Export logs</button>
-                <button class="mini" id="bundle-logs">Generate Support Bundle</button>
-              </div>
-            </div>
-          </section>
-        </section>
-
-        <section class="view" data-view="settings">
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Connection Wizard</h2>
-              <p>Onboarding guiado con detección automática.</p>
-            </div>
-            <div class="wizard">
-              <div class="wizard-step">
-                <span class="step-badge">1</span>
-                <div>
-                  <h4>Detectar OpenClaw</h4>
-                  <p id="detect-openclaw">Buscando instalación local...</p>
-                </div>
-              </div>
-              <div class="wizard-step">
-                <span class="step-badge">2</span>
-                <div>
-                  <h4>Gateway + URL sugerida</h4>
-                  <p id="detect-gateway">Sugerencia: http://127.0.0.1:18789</p>
-                </div>
-              </div>
-              <div class="wizard-step">
-                <span class="step-badge">3</span>
-                <div>
-                  <h4>Token seguro</h4>
-                  <p id="detect-token">Ruta detectada: ~/.config/openclaw/gateway.auth.token</p>
-                </div>
-              </div>
-              <div class="wizard-step">
-                <span class="step-badge">4</span>
-                <div>
-                  <h4>Test OK</h4>
-                  <p id="detect-test">Validando conexión...</p>
-                </div>
-              </div>
-              <button class="primary" id="launch-dashboard">Launch Dashboard</button>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-header">
-              <h2>Configuración</h2>
-              <p>Resumen de estado local y rutas configuradas.</p>
-            </div>
-            <div class="card settings-card">
-              <p><strong>Host:</strong> <span id="config-host">--</span></p>
-              <p><strong>Port:</strong> <span id="config-port">--</span></p>
-              <p><strong>Gateway URL:</strong> <span id="config-gateway">--</span></p>
-              <p><strong>Token path:</strong> <span id="config-token">--</span></p>
-              <p><strong>Allow-actions:</strong> <span id="config-actions">--</span></p>
-            </div>
-          </section>
-        </section>
-      </main>
-    </div>
-
-    <div class="modal" id="wizard-modal" aria-hidden="true">
-      <div class="modal-content">
-        <header>
-          <h2>Connection Wizard</h2>
-          <button class="ghost-btn" id="close-wizard">Cerrar</button>
-        </header>
-        <ol class="modal-steps">
-          <li><strong>Detectar OpenClaw</strong> · Versión: <span id="modal-openclaw">--</span></li>
-          <li><strong>Detectar Gateway</strong> · URL: <span id="modal-gateway">--</span></li>
-          <li><strong>Token seguro</strong> · Ruta: <span id="modal-token">--</span></li>
-          <li><strong>Test</strong> · Estado: <span class="badge" id="modal-test">--</span></li>
-        </ol>
-        <button class="primary" id="confirm-wizard">Launch Dashboard</button>
       </div>
-    </div>
+      <nav class="hud-nav">
+        <a href="#install" class="hud-link">Instalar</a>
+        <a href="#payload" class="hud-link">Payload</a>
+        <a href="#checklist" class="hud-link">Checklist</a>
+        <a href="dashboard/" class="hud-link">Dashboard demo</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="install">
+        <div class="hero-content">
+          <p class="hud-eyebrow">WAR-ROOM CONTROL</p>
+          <h1>Tactical control panel for OpenClaw.</h1>
+          <p class="muted">
+            Esta es la landing oficial de instalación. Para el panel real ejecuta <strong>clawdesk run</strong> en tu host local.
+          </p>
+          <div class="selector-grid">
+            <div class="segment">
+              <button class="hud-chip active" data-mode="human">Soy humano</button>
+              <button class="hud-chip" data-mode="agent">Soy un agente</button>
+            </div>
+            <div class="segment">
+              <button class="hud-chip active" data-os="linux">Linux</button>
+              <button class="hud-chip" data-os="wsl">WSL2</button>
+            </div>
+            <div class="segment">
+              <button class="hud-chip active" data-channel="stable">Stable</button>
+              <button class="hud-chip" data-channel="nightly">Nightly</button>
+            </div>
+          </div>
+          <div class="hud-card">
+            <div class="hud-card-header">
+              <h3 id="install-title">Instalar en 1 comando</h3>
+              <span class="hud-badge" id="install-badge">Stable</span>
+            </div>
+            <div class="terminal-block" id="install-command">
+              <code></code>
+            </div>
+            <div class="hud-actions">
+              <button class="hud-btn primary" id="copy-command">Copy</button>
+              <a class="hud-btn" id="safe-install" href="https://github.com/smouj/ClawDesk/releases" target="_blank" rel="noreferrer">Safe install</a>
+            </div>
+            <p class="muted">Safe install usa releases oficiales + SHA256SUMS.</p>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <div class="hud-card">
+            <h3>Ops Overview</h3>
+            <ul class="hud-list">
+              <li>Loopback-only por defecto (no expone LAN).</li>
+              <li>Allow-actions obligatorio para cualquier comando.</li>
+              <li>Logs en vivo vía SSE + redacción de secretos.</li>
+              <li>Compat total con OpenClaw Gateway.</li>
+            </ul>
+            <div class="hud-actions">
+              <a class="hud-btn" href="#checklist">Ir al checklist</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="payload" id="payload">
+        <div class="hud-card">
+          <div class="hud-card-header">
+            <h2>Payload listo para agentes</h2>
+            <span class="hud-badge">Codex / OpenClaw / Clawdbot</span>
+          </div>
+          <p class="muted">Copia y pega este payload en tu agente para instalar y devolver output.</p>
+          <div class="terminal-block" id="agent-payload">
+            <code></code>
+          </div>
+          <div class="hud-actions">
+            <button class="hud-btn primary" id="copy-payload">Copy payload</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="checklist" id="checklist">
+        <div class="hud-card">
+          <div class="hud-card-header">
+            <h2>Ops checklist post-install</h2>
+            <span class="hud-badge ok">Ready</span>
+          </div>
+          <ol class="ops-list">
+            <li><code>clawdesk doctor</code> — validar gateway, token y puerto.</li>
+            <li><code>clawdesk run</code> — iniciar el daemon local.</li>
+            <li><code>clawdesk status</code> — confirmar API local.</li>
+            <li><code>clawdesk open</code> — abrir dashboard en el navegador.</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>ClawDesk v1.2.0 · NeuroCircuit War-Room Edition</p>
+    </footer>
 
     <script src="app.js"></script>
   </body>
