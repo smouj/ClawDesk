@@ -1,5 +1,4 @@
 const navItems = document.querySelectorAll(".nav-item");
-const toggleButtons = document.querySelectorAll(".toggle-btn");
 const wizardModal = document.getElementById("wizard-modal");
 const launchWizard = document.getElementById("launch-wizard");
 const closeWizard = document.getElementById("close-wizard");
@@ -51,8 +50,8 @@ const setActiveView = (viewName) => {
   const subtitle = document.getElementById("view-subtitle");
   const viewCopy = {
     dashboard: {
-      title: "ClawDesk",
-      subtitle: "NeuroCircuit War-Room Edition",
+      title: "ClawDesk OS",
+      subtitle: "Retro-OS 2000 · Winamp Skin Edition",
     },
     agents: {
       title: "Agents",
@@ -72,8 +71,12 @@ const setActiveView = (viewName) => {
     },
   };
   if (viewCopy[viewName]) {
-    title.textContent = viewCopy[viewName].title;
-    subtitle.textContent = viewCopy[viewName].subtitle;
+    if (title) {
+      title.textContent = viewCopy[viewName].title;
+    }
+    if (subtitle) {
+      subtitle.textContent = viewCopy[viewName].subtitle;
+    }
   }
 };
 
@@ -85,13 +88,6 @@ navItems.forEach((item) => {
 
 document.querySelectorAll("[data-nav]").forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.nav));
-});
-
-toggleButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    toggleButtons.forEach((toggle) => toggle.classList.remove("active"));
-    button.classList.add("active");
-  });
 });
 
 const openModal = () => {
@@ -125,6 +121,15 @@ const setBadge = (id, value, tone) => {
   }
 };
 
+const pulseEqualizer = (tone = "ok") => {
+  const eq = document.getElementById("status-eq");
+  if (!eq) return;
+  eq.dataset.state = tone;
+  eq.classList.remove("kick");
+  void eq.offsetWidth;
+  eq.classList.add("kick");
+};
+
 const normalizeItems = (items) => {
   if (!Array.isArray(items)) return [];
   return items.map((item) => {
@@ -153,34 +158,32 @@ const renderAgents = (agents) => {
   empty.style.display = "none";
   agents.forEach((agent) => {
     const card = document.createElement("article");
-    card.className = "hud-card agent-card";
+    card.className = "agent-card";
     card.innerHTML = `
       <div class="agent-title">
-        <div class="avatar neon">${agent.name.slice(0, 1).toUpperCase()}</div>
+        <div class="avatar">${agent.name.slice(0, 1).toUpperCase()}</div>
         <div>
           <h3>${agent.name}</h3>
           <p>${agent.description || "Agent"}</p>
         </div>
       </div>
-      <div class="hud-row">
-        <span class="hud-badge">${agent.status}</span>
-        <span class="hud-badge">ID: ${agent.id}</span>
+      <div class="panel-rows">
+        <span class="badge">${agent.status}</span>
+        <span class="badge">ID: ${agent.id}</span>
       </div>
-      <div class="hud-actions">
-        <button class="hud-btn" data-action="start">Start</button>
-        <button class="hud-btn warn" data-action="stop">Stop</button>
-        <button class="hud-btn" data-action="restart">Restart</button>
+      <div class="panel-actions">
+        <button class="btn-jelly" data-action="start">Start</button>
+        <button class="btn-jelly warn" data-action="stop">Stop</button>
+        <button class="btn-jelly" data-action="restart">Restart</button>
       </div>
     `;
     card.querySelectorAll("button[data-action]").forEach((button) => {
       button.addEventListener("click", async () => {
         const action = button.dataset.action;
         try {
-          await apiFetch(`/api/agents/${encodeURIComponent(agent.id)}/${action}`,
-            {
-              method: "POST",
-            }
-          );
+          await apiFetch(`/api/agents/${encodeURIComponent(agent.id)}/${action}`, {
+            method: "POST",
+          });
           await loadAgents();
         } catch (error) {
           alert(`Error: ${error.message}`);
@@ -203,7 +206,7 @@ const renderSkills = (skills) => {
   empty.style.display = "none";
   skills.forEach((skill) => {
     const card = document.createElement("article");
-    card.className = "hud-card agent-card";
+    card.className = "agent-card";
     card.innerHTML = `
       <div class="agent-title">
         <div class="avatar pink">${skill.name.slice(0, 1).toUpperCase()}</div>
@@ -212,24 +215,22 @@ const renderSkills = (skills) => {
           <p>${skill.description || "Skill"}</p>
         </div>
       </div>
-      <div class="hud-row">
-        <span class="hud-badge">${skill.status}</span>
-        <span class="hud-badge">ID: ${skill.id}</span>
+      <div class="panel-rows">
+        <span class="badge">${skill.status}</span>
+        <span class="badge">ID: ${skill.id}</span>
       </div>
-      <div class="hud-actions">
-        <button class="hud-btn" data-action="enable">Enable</button>
-        <button class="hud-btn warn" data-action="disable">Disable</button>
+      <div class="panel-actions">
+        <button class="btn-jelly" data-action="enable">Enable</button>
+        <button class="btn-jelly warn" data-action="disable">Disable</button>
       </div>
     `;
     card.querySelectorAll("button[data-action]").forEach((button) => {
       button.addEventListener("click", async () => {
         const action = button.dataset.action;
         try {
-          await apiFetch(`/api/skills/${encodeURIComponent(skill.id)}/${action}`,
-            {
-              method: "POST",
-            }
-          );
+          await apiFetch(`/api/skills/${encodeURIComponent(skill.id)}/${action}`, {
+            method: "POST",
+          });
           await loadSkills();
         } catch (error) {
           alert(`Error: ${error.message}`);
@@ -244,9 +245,12 @@ let lastLogs = [];
 let streamPaused = false;
 let eventSource = null;
 let reconnectTimer = null;
+let reconnectDelay = 1200;
+let autoScroll = true;
 
 const renderLogs = () => {
   const stream = document.getElementById("log-stream");
+  const preview = document.getElementById("log-preview");
   if (!stream) return;
   const levelFilter = document.getElementById("log-level")?.value || "all";
   const searchTerm = document.getElementById("log-search")?.value?.toLowerCase() || "";
@@ -261,7 +265,17 @@ const renderLogs = () => {
     p.textContent = line;
     stream.appendChild(p);
   });
-  stream.scrollTop = stream.scrollHeight;
+  if (autoScroll) {
+    stream.scrollTop = stream.scrollHeight;
+  }
+  if (preview) {
+    preview.innerHTML = "";
+    lastLogs.slice(-6).forEach((line) => {
+      const p = document.createElement("p");
+      p.textContent = line;
+      preview.appendChild(p);
+    });
+  }
 };
 
 const addLogs = (lines) => {
@@ -293,22 +307,32 @@ const connectLogStream = () => {
     try {
       const data = JSON.parse(event.data);
       addLogs(data.lines || []);
+      pulseEqualizer("ok");
     } catch (error) {
       addLogs([`Error parseando logs: ${error.message}`]);
+      pulseEqualizer("warn");
     }
+  });
+  eventSource.addEventListener("heartbeat", () => {
+    pulseEqualizer("ok");
   });
   eventSource.addEventListener("error", () => {
     eventSource?.close();
     if (!reconnectTimer && !streamPaused) {
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
+        reconnectDelay = Math.min(reconnectDelay * 1.6, 8000);
         connectLogStream();
-      }, 2000);
+      }, reconnectDelay);
     }
+  });
+  eventSource.addEventListener("open", () => {
+    reconnectDelay = 1200;
   });
 };
 
 const toggleStreamButton = document.getElementById("toggle-stream");
+const toggleAutoscrollButton = document.getElementById("toggle-autoscroll");
 
 toggleStreamButton?.addEventListener("click", () => {
   streamPaused = !streamPaused;
@@ -318,6 +342,11 @@ toggleStreamButton?.addEventListener("click", () => {
   } else {
     connectLogStream();
   }
+});
+
+toggleAutoscrollButton?.addEventListener("click", () => {
+  autoScroll = !autoScroll;
+  toggleAutoscrollButton.textContent = autoScroll ? "Auto-scroll" : "Manual scroll";
 });
 
 const clearLogsButton = document.getElementById("clear-logs");
@@ -332,12 +361,16 @@ const loadGatewayStatus = async () => {
     setBadge("gateway-status", "UP", "ok");
     setBadge("gateway-state", "UP", "ok");
     setText("gateway-summary", data.status || "OK");
+    setText("gateway-state-text", "UP");
     setText("last-activity", new Date().toLocaleTimeString());
+    pulseEqualizer("ok");
   } catch (error) {
     setBadge("gateway-status", "DOWN", "error");
     setBadge("gateway-state", "DOWN", "error");
     setText("gateway-summary", error.message);
+    setText("gateway-state-text", "DOWN");
     setText("last-activity", "--");
+    pulseEqualizer("error");
   }
 };
 
@@ -347,7 +380,7 @@ const loadOpenClawVersion = async () => {
     setText("openclaw-version", data.version || "detectado");
     setText("detect-openclaw", `Detectado: ${data.version} (${data.binary})`);
     setText("modal-openclaw", data.version || "OK");
-  } catch (error) {
+  } catch {
     setText("openclaw-version", "no detectado");
     setText("detect-openclaw", "OpenClaw no encontrado en PATH.");
     setText("modal-openclaw", "No detectado");
@@ -373,7 +406,7 @@ const loadConfig = async () => {
     setText("gateway-bind", data.gateway.bind);
     setText("gateway-port", data.gateway.port);
     setText("gateway-token-source", data.gateway.token_source || "--");
-  } catch (error) {
+  } catch {
     setText("config-host", "--");
     setText("config-port", "--");
     setText("config-gateway", "--");
@@ -387,7 +420,7 @@ const loadAgents = async () => {
     const data = await apiFetch("/api/agents");
     const items = normalizeItems(data.agents || []);
     renderAgents(items);
-  } catch (error) {
+  } catch {
     renderAgents([]);
   }
 };
@@ -397,7 +430,7 @@ const loadSkills = async () => {
     const data = await apiFetch("/api/skills");
     const items = normalizeItems(data.skills || []);
     renderSkills(items);
-  } catch (error) {
+  } catch {
     renderSkills([]);
   }
 };
@@ -407,9 +440,11 @@ const updateWizardStatus = async () => {
     await apiFetch("/api/health");
     setText("detect-test", "Conexión validada.");
     setBadge("modal-test", "OK", "ok");
-  } catch (error) {
+    pulseEqualizer("ok");
+  } catch {
     setText("detect-test", "No se pudo validar la conexión.");
     setBadge("modal-test", "ERROR", "error");
+    pulseEqualizer("warn");
   }
 };
 
@@ -421,10 +456,12 @@ const pingGateway = async () => {
     setText("gateway-latency", `${latency} ms`);
     setText("last-ping", new Date().toLocaleTimeString());
     setBadge("telemetry-status", "Nominal", "ok");
-  } catch (error) {
+    pulseEqualizer("ok");
+  } catch {
     setText("gateway-latency", "--");
     setText("last-ping", "--");
     setBadge("telemetry-status", "Offline", "warn");
+    pulseEqualizer("warn");
   }
 };
 
@@ -441,6 +478,7 @@ const refreshAll = async () => {
     setBadge("modal-test", "OFFLINE", "warn");
     setBadge("gateway-status", "OFF", "warn");
     setBadge("gateway-state", "OFF", "warn");
+    setText("gateway-state-text", "OFF");
     return;
   }
   await Promise.all([
@@ -501,8 +539,10 @@ const runGatewayAction = async (action, method = "POST") => {
     await apiFetch(`/api/gateway/${action}`, { method });
     setBadge("gateway-actions-status", "OK", "ok");
     setLastAction(action);
+    pulseEqualizer("ok");
   } catch (error) {
     setBadge("gateway-actions-status", "ERROR", "error");
+    pulseEqualizer("error");
     alert(`No se pudo ejecutar ${action}: ${error.message}`);
   }
 };

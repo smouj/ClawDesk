@@ -22,7 +22,14 @@ require_cmd() {
 
 require_cmd curl
 require_cmd tar
-require_cmd sha256sum
+if command -v sha256sum >/dev/null 2>&1; then
+  CHECKSUM_CMD="sha256sum"
+elif command -v shasum >/dev/null 2>&1; then
+  CHECKSUM_CMD="shasum -a 256"
+else
+  echo "Falta sha256sum o shasum para verificación de checksum." >&2
+  exit 1
+fi
 
 if [ "$CHANNEL" = "stable" ]; then
   ARCHIVE="clawdesk-${VERSION}.tar.gz"
@@ -31,7 +38,7 @@ if [ "$CHANNEL" = "stable" ]; then
   echo "Descargando release ${VERSION} (${ARCHIVE})"
   curl -fsSL "${BASE_URL}/${RELEASE_PATH}" -o "$TMP_DIR/${ARCHIVE}"
   curl -fsSL "${BASE_URL}/${CHECKSUM_PATH}" -o "$TMP_DIR/SHA256SUMS"
-  (cd "$TMP_DIR" && grep "${ARCHIVE}" SHA256SUMS | sha256sum -c -)
+  (cd "$TMP_DIR" && grep "${ARCHIVE}" SHA256SUMS | $CHECKSUM_CMD -c -)
   tar -xzf "$TMP_DIR/${ARCHIVE}" -C "$TMP_DIR"
   INSTALL_SRC="$TMP_DIR/clawdesk-${VERSION}"
 else

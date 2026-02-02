@@ -5,12 +5,19 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "lint": "node --check server/index.js && node --check server/server.js && node --check server/config.js && node --check server/openclaw.js && node --check server/supportBundle.js && node --check server/smoke.js",
+    "lint": "eslint app/**/*.js server/**/*.js docs/app.js tests/**/*.mjs",
+    "format": "prettier --check .",
+    "test": "vitest run",
     "smoke": "node server/smoke.js"
   },
   "dependencies": {
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "tar": "^6.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.3",
+    "vitest": "^2.1.1"
   }
 }

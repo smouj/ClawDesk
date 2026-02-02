@@ -19,6 +19,7 @@
       "gateway.status",
       "gateway.logs",
       "gateway.probe",
+      "gateway.dashboard",
       "gateway.start",
       "gateway.stop",
       "gateway.restart",

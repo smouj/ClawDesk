@@ -11,7 +11,7 @@ const writeSupportBundle = async ({
   configRaw,
   statusAll,
   logs,
-  secrets
+  secrets,
 }) => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdesk-bundle-"));
   const bundleDir = path.join(tempDir, "bundle");
@@ -35,14 +35,14 @@ const writeSupportBundle = async ({
     {
       gzip: true,
       file: bundlePath,
-      cwd: bundleDir
+      cwd: bundleDir,
     },
     [
       "clawdesk-version.txt",
       "config.redacted.json",
       "openclaw-status-all.txt",
       "gateway-logs.txt",
-      "bundle-readme.txt"
+      "bundle-readme.txt",
     ]
   );
 

@@ -18,12 +18,19 @@ const { createServer } = require("./server");
 const config = {
   configVersion: 2,
   app: { host: "127.0.0.1", port: 5180, theme: "dark" },
-  gateway: { url: "http://127.0.0.1:18789", bind: "127.0.0.1", port: 18789, token_path: "/tmp/does-not-exist", auth: { token: "" } },
+  gateway: {
+    url: "http://127.0.0.1:18789",
+    bind: "127.0.0.1",
+    port: 18789,
+    token_path: "/tmp/does-not-exist",
+    auth: { token: "" },
+  },
   security: {
     allow_actions: [
       "gateway.status",
       "gateway.logs",
       "gateway.probe",
+      "gateway.dashboard",
       "gateway.start",
       "gateway.stop",
       "gateway.restart",
@@ -35,10 +42,10 @@ const config = {
       "skills.enable",
       "skills.disable",
       "support.bundle",
-      "secret.rotate"
-    ]
+      "secret.rotate",
+    ],
   },
-  observability: { log_poll_ms: 1500, backoff_max_ms: 8000 }
+  observability: { log_poll_ms: 1500, backoff_max_ms: 8000 },
 };
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 fs.writeFileSync(secretPath, "smoke-secret");
@@ -50,7 +57,7 @@ const server = app.listen(config.app.port, config.app.host, () => {
     port: config.app.port,
     path: "/api/health",
     method: "GET",
-    headers: { Authorization: "Bearer smoke-secret" }
+    headers: { Authorization: "Bearer smoke-secret" },
   };
   const req = http.request(options, (res) => {
     if (res.statusCode !== 200) {

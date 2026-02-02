@@ -15,7 +15,7 @@ const DEFAULT_CONFIG = {
   app: {
     host: "127.0.0.1",
     port: 4178,
-    theme: "dark"
+    theme: "dark",
   },
   gateway: {
     url: "http://127.0.0.1:18789",
@@ -23,14 +23,15 @@ const DEFAULT_CONFIG = {
     port: 18789,
     token_path: path.join(HOME_DIR, ".config", "openclaw", "gateway.auth.token"),
     auth: {
-      token: ""
-    }
+      token: "",
+    },
   },
   security: {
     allow_actions: [
       "gateway.status",
       "gateway.logs",
       "gateway.probe",
+      "gateway.dashboard",
       "gateway.start",
       "gateway.stop",
       "gateway.restart",
@@ -42,13 +43,13 @@ const DEFAULT_CONFIG = {
       "skills.enable",
       "skills.disable",
       "support.bundle",
-      "secret.rotate"
-    ]
+      "secret.rotate",
+    ],
   },
   observability: {
     log_poll_ms: 1500,
-    backoff_max_ms: 8000
-  }
+    backoff_max_ms: 8000,
+  },
 };
 
 const ensureDirectory = (dir) => {
@@ -89,7 +90,7 @@ const loadConfig = () => {
       ...DEFAULT_CONFIG.app,
       ...(config.app || {}),
       port,
-      host
+      host,
     },
     gateway: {
       ...DEFAULT_CONFIG.gateway,
@@ -99,17 +100,17 @@ const loadConfig = () => {
       url: gatewayUrl,
       auth: {
         ...DEFAULT_CONFIG.gateway.auth,
-        ...(config.gateway?.auth || {})
-      }
+        ...(config.gateway?.auth || {}),
+      },
     },
     security: {
       ...DEFAULT_CONFIG.security,
-      ...(config.security || {})
+      ...(config.security || {}),
     },
     observability: {
       ...DEFAULT_CONFIG.observability,
-      ...(config.observability || {})
-    }
+      ...(config.observability || {}),
+    },
   };
 };
 
@@ -137,7 +138,7 @@ const readGatewayToken = (tokenPath) => {
   try {
     const token = fs.readFileSync(tokenPath, "utf-8").trim();
     return token || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -153,33 +154,32 @@ const redactText = (text, secrets = []) => {
 
 const resolveGatewayConfig = ({ config, env = process.env, flags = {} } = {}) => {
   const resolvedConfig = config || loadConfig();
-  const portFromFlags = flags.port ? Number(flags.port) : null;
-  const envPort = env.OPENCLAW_GATEWAY_PORT ? Number(env.OPENCLAW_GATEWAY_PORT) : null;
-  const port = Number.isInteger(portFromFlags)
-    ? portFromFlags
-    : Number.isInteger(envPort)
-      ? envPort
-      : Number(resolvedConfig.gateway?.port || 18789);
-  const portSource = Number.isInteger(portFromFlags)
-    ? "flag"
-    : Number.isInteger(envPort)
-      ? "env"
-      : resolvedConfig.gateway?.port
-        ? "config"
-        : "default";
+  const normalizePort = (value) => {
+    const port = Number(value);
+    if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+      return null;
+    }
+    return port;
+  };
+  const portFromFlags = normalizePort(flags.port);
+  const envPort = normalizePort(env.OPENCLAW_GATEWAY_PORT);
+  const configPort = normalizePort(resolvedConfig.gateway?.port);
+  const port = portFromFlags ?? envPort ?? configPort ?? 18789;
+  const portSource = portFromFlags ? "flag" : envPort ? "env" : configPort ? "config" : "default";
 
+  const tokenFromFile = readGatewayToken(resolvedConfig.gateway?.token_path);
   const token =
     flags.token ||
     env.OPENCLAW_GATEWAY_TOKEN ||
     resolvedConfig.gateway?.auth?.token ||
-    readGatewayToken(resolvedConfig.gateway?.token_path);
+    tokenFromFile;
   const tokenSource = flags.token
     ? "flag"
     : env.OPENCLAW_GATEWAY_TOKEN
       ? "env"
       : resolvedConfig.gateway?.auth?.token
         ? "config"
-        : readGatewayToken(resolvedConfig.gateway?.token_path)
+        : tokenFromFile
           ? "file"
           : "missing";
 
@@ -192,7 +192,7 @@ const resolveGatewayConfig = ({ config, env = process.env, flags = {} } = {}) =>
     token,
     tokenSource,
     bind,
-    url
+    url,
   };
 };
 
@@ -208,5 +208,5 @@ module.exports = {
   rotateSecret,
   readGatewayToken,
   redactText,
-  resolveGatewayConfig
+  resolveGatewayConfig,
 };

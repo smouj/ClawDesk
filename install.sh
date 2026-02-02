@@ -44,6 +44,7 @@ require_cmd python3
 
 print_step "Preparando directorios"
 mkdir -p "$INSTALL_DIR" "$APP_DIR" "$SERVER_DIR" "$BIN_DIR" "$CONFIG_DIR"
+USE_EXISTING_CONFIG=0
 
 if [ -f "$BIN_DIR/$APP_NAME" ]; then
   echo "Instalación existente detectada."
@@ -78,6 +79,11 @@ if [ -f "$CONFIG_FILE" ]; then
   print_step "Respaldando configuración existente"
   cp "$CONFIG_FILE" "$BACKUP_NAME"
   echo "Backup: $BACKUP_NAME"
+  read -r -p "¿Deseas reconfigurar ahora? (y/N): " RECONFIGURE
+  if [ "${RECONFIGURE:-N}" != "y" ]; then
+    USE_EXISTING_CONFIG=1
+    echo "Manteniendo configuración existente."
+  fi
 fi
 
 print_step "Copiando assets"
@@ -90,15 +96,33 @@ cp package.json "$INSTALL_DIR/"
 print_step "Instalando dependencias Node.js"
 ( cd "$INSTALL_DIR" && npm install --production )
 
-print_step "Configuración guiada"
-read -r -p "Puerto para el dashboard (default 4178): " PORT_INPUT
-PORT="${PORT_INPUT:-4178}"
-if [ "$PORT" -lt 1024 ] || [ "$PORT" -gt 65535 ]; then
-  echo "El puerto debe estar entre 1024 y 65535." >&2
-  exit 1
-fi
+if [ "$USE_EXISTING_CONFIG" -eq 0 ]; then
+  print_step "Configuración guiada"
+  EXISTING_PORT="4178"
+  EXISTING_GATEWAY_BIND="127.0.0.1"
+  EXISTING_GATEWAY_PORT="18789"
+  EXISTING_TOKEN_PATH="$HOME/.config/openclaw/gateway.auth.token"
+  if [ -f "$CONFIG_FILE" ]; then
+    read -r EXISTING_PORT EXISTING_GATEWAY_BIND EXISTING_GATEWAY_PORT EXISTING_TOKEN_PATH < <(python3 - <<PY
+import json
+from pathlib import Path
+config = json.loads(Path("$CONFIG_FILE").read_text())
+print(config.get("app", {}).get("port", 4178))
+print(config.get("gateway", {}).get("bind", "127.0.0.1"))
+print(config.get("gateway", {}).get("port", 18789))
+print(config.get("gateway", {}).get("token_path", "$HOME/.config/openclaw/gateway.auth.token"))
+PY
+)
+  fi
 
-python3 - <<PY
+  read -r -p "Puerto para el dashboard (default ${EXISTING_PORT}): " PORT_INPUT
+  PORT="${PORT_INPUT:-$EXISTING_PORT}"
+  if [ "$PORT" -lt 1024 ] || [ "$PORT" -gt 65535 ]; then
+    echo "El puerto debe estar entre 1024 y 65535." >&2
+    exit 1
+  fi
+
+  python3 - <<PY
 import socket
 port = int("${PORT}")
 sock = socket.socket()
@@ -110,25 +134,25 @@ finally:
     sock.close()
 PY
 
-read -r -p "Bind del gateway (default 127.0.0.1): " GATEWAY_BIND_INPUT
-GATEWAY_BIND="${GATEWAY_BIND_INPUT:-127.0.0.1}"
-if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
-  echo "El gateway debe enlazarse a loopback por seguridad." >&2
-  exit 1
-fi
+  read -r -p "Bind del gateway (default ${EXISTING_GATEWAY_BIND}): " GATEWAY_BIND_INPUT
+  GATEWAY_BIND="${GATEWAY_BIND_INPUT:-$EXISTING_GATEWAY_BIND}"
+  if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
+    echo "El gateway debe enlazarse a loopback por seguridad." >&2
+    exit 1
+  fi
 
-read -r -p "Puerto del gateway (default 18789): " GATEWAY_PORT_INPUT
-GATEWAY_PORT="${GATEWAY_PORT_INPUT:-18789}"
-if [ "$GATEWAY_PORT" -lt 1024 ] || [ "$GATEWAY_PORT" -gt 65535 ]; then
-  echo "El puerto del gateway debe estar entre 1024 y 65535." >&2
-  exit 1
-fi
-GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
+  read -r -p "Puerto del gateway (default ${EXISTING_GATEWAY_PORT}): " GATEWAY_PORT_INPUT
+  GATEWAY_PORT="${GATEWAY_PORT_INPUT:-$EXISTING_GATEWAY_PORT}"
+  if [ "$GATEWAY_PORT" -lt 1024 ] || [ "$GATEWAY_PORT" -gt 65535 ]; then
+    echo "El puerto del gateway debe estar entre 1024 y 65535." >&2
+    exit 1
+  fi
+  GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
 
-read -r -p "Ruta de gateway.auth.token (default ~/.config/openclaw/gateway.auth.token): " TOKEN_PATH_INPUT
-TOKEN_PATH="${TOKEN_PATH_INPUT:-$HOME/.config/openclaw/gateway.auth.token}"
+  read -r -p "Ruta de gateway.auth.token (default ${EXISTING_TOKEN_PATH}): " TOKEN_PATH_INPUT
+  TOKEN_PATH="${TOKEN_PATH_INPUT:-$EXISTING_TOKEN_PATH}"
 
-cat > "$CONFIG_FILE" <<CONFIG
+  cat > "$CONFIG_FILE" <<CONFIG
 {
   "configVersion": 2,
   "app": {
@@ -150,6 +174,7 @@ cat > "$CONFIG_FILE" <<CONFIG
       "gateway.status",
       "gateway.logs",
       "gateway.probe",
+      "gateway.dashboard",
       "gateway.start",
       "gateway.stop",
       "gateway.restart",
@@ -170,7 +195,8 @@ cat > "$CONFIG_FILE" <<CONFIG
   }
 }
 CONFIG
-chmod 600 "$CONFIG_FILE"
+  chmod 600 "$CONFIG_FILE"
+fi
 
 if [ ! -f "$SECRET_FILE" ]; then
   python3 - <<PY
@@ -213,6 +239,7 @@ print(config["gateway"]["token_path"])
 print(config["gateway"]["url"])
 print(config["gateway"].get("bind", "127.0.0.1"))
 print(config["gateway"].get("port", 18789))
+print(config.get("gateway", {}).get("auth", {}).get("token", ""))
 PY
 }
 
@@ -245,7 +272,7 @@ is_running() {
 case "${1:-run}" in
   run)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
     if is_running; then
       echo "ClawDesk ya está en ejecución (PID $(cat "$PID_FILE"))."
       exit 0
@@ -256,7 +283,7 @@ case "${1:-run}" in
     ;;
   status)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
     if is_running; then
       echo "✅ Daemon activo (PID $(cat "$PID_FILE"))."
       SECRET=$(read_secret)
@@ -287,7 +314,7 @@ PY
     ;;
   open)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
     echo "Abre en tu navegador: http://${HOST}:${PORT}"
     ;;
   config)
@@ -296,7 +323,7 @@ PY
     ;;
   doctor)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT CONFIG_TOKEN < <(read_config)
     echo "✅ Host: ${HOST}"
     echo "✅ Port: ${PORT}"
     if command -v openclaw >/dev/null 2>&1; then
@@ -315,10 +342,22 @@ PY
       echo "⚠️ openclaw/clawdbot/moltbot no está en PATH"
       echo "   Instala OpenClaw para habilitar acciones reales."
     fi
-    if [ -f "$TOKEN_PATH" ]; then
-      echo "✅ Token encontrado en ${TOKEN_PATH}"
+    TOKEN_SOURCE="missing"
+    if [ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
+      TOKEN_SOURCE="env"
+    elif [ -n "$CONFIG_TOKEN" ]; then
+      TOKEN_SOURCE="config"
+    elif [ -f "$TOKEN_PATH" ]; then
+      TOKEN_SOURCE="file"
+    fi
+    if [ "$TOKEN_SOURCE" = "file" ]; then
+      echo "✅ Token encontrado en ${TOKEN_PATH} (source: file)"
+    elif [ "$TOKEN_SOURCE" = "env" ]; then
+      echo "✅ Token detectado por env (OPENCLAW_GATEWAY_TOKEN)"
+    elif [ "$TOKEN_SOURCE" = "config" ]; then
+      echo "✅ Token detectado en config.json"
     else
-      echo "⚠️ Token no encontrado en ${TOKEN_PATH}"
+      echo "⚠️ Token no encontrado (source: missing)"
     fi
     python3 - <<PY
 import socket
@@ -332,8 +371,14 @@ except OSError:
 finally:
     sock.close()
 PY
+    PORT_SOURCE="config"
+    if [ -n "${OPENCLAW_GATEWAY_PORT:-}" ]; then
+      PORT_SOURCE="env"
+      GATEWAY_PORT="${OPENCLAW_GATEWAY_PORT}"
+      GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
+    fi
     echo "Gateway Bind: ${GATEWAY_BIND}"
-    echo "Gateway Port: ${GATEWAY_PORT}"
+    echo "Gateway Port: ${GATEWAY_PORT} (source: ${PORT_SOURCE})"
     echo "Gateway URL: ${GATEWAY_URL}"
     ;;
   secret)
