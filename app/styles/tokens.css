@@ -1,0 +1,45 @@
+:root {
+  color-scheme: dark;
+  --bg: #07080d;
+  --panel: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.12);
+  --text: #eaf0ff;
+  --muted: rgba(234, 240, 255, 0.66);
+  --cyan: #34f2ff;
+  --magenta: #ff4fd8;
+  --lime: #6bff7a;
+  --amber: #ffb020;
+  --red: #ff2d2d;
+  --radius: 16px;
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: radial-gradient(circle at top, rgba(52, 242, 255, 0.08), transparent 45%),
+    var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

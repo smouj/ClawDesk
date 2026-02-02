@@ -2,7 +2,7 @@ const http = require("http");
 const fs = require("fs");
 
 const { createServer } = require("./server");
-const { PID_PATH, LOG_PATH } = require("./config");
+const { PID_PATH, LOG_PATH } = require("./config/loadConfig");
 
 const start = () => {
   const { app, config } = createServer();

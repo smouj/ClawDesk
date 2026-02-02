@@ -1,0 +1,154 @@
+import { setLcd, pulseVu } from "./components.js";
+
+const setTable = (table, headers, rows) => {
+  if (!table) return;
+  if (!rows.length) {
+    table.innerHTML = "<tr><td class=\"muted\">Sin datos</td></tr>";
+    return;
+  }
+  table.innerHTML = `
+    <thead>
+      <tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>
+    </thead>
+    <tbody>
+      ${rows
+        .map((row) => `<tr>${row.map((cell) => `<td>${cell ?? "n/a"}</td>`).join("")}</tr>`)
+        .join("")}
+    </tbody>
+  `;
+};
+
+export const renderDashboard = (state) => {
+  const gatewayState = document.getElementById("gateway-state");
+  const gatewaySummary = document.getElementById("gateway-summary");
+  const gatewayBind = document.getElementById("gateway-bind");
+  const gatewayLatency = document.getElementById("gateway-latency");
+  const usageTokens = document.getElementById("usage-tokens");
+  const usageCost = document.getElementById("usage-cost");
+  const usageNote = document.getElementById("usage-note");
+  const lcdStatus = document.getElementById("lcd-status");
+
+  if (state.gateway) {
+    gatewayState.textContent = state.gateway.status ? "online" : "offline";
+    gatewaySummary.textContent = state.gateway.status || "Sin datos";
+    setLcd(gatewayBind, `bind ${state.gateway.profile || "--"}`);
+    setLcd(gatewayLatency, `latency ${state.gateway.latency || "--"}`);
+  }
+
+  if (state.usage) {
+    setLcd(usageTokens, `tokens ${state.usage.totals.tokensIn ?? "n/a"}`);
+    setLcd(usageCost, `cost ${state.usage.totals.cost ?? "n/a"}`);
+    usageNote.textContent = state.usage.notes || "Actualizado";
+    pulseVu(document.getElementById("vu-activity"), 3);
+  }
+
+  if (state.config) {
+    const active = state.config.activeProfile;
+    const profile = state.config.profiles.find((p) => p.name === active);
+    if (profile) {
+      setLcd(lcdStatus, `HOST ${profile.bind}:${profile.port}`);
+    }
+  }
+};
+
+export const renderProfiles = (state) => {
+  const container = document.getElementById("profiles-list");
+  const empty = document.getElementById("profiles-empty");
+  if (!container) return;
+  container.innerHTML = "";
+  if (!state.profiles.length) {
+    empty.style.display = "block";
+    return;
+  }
+  empty.style.display = "none";
+  state.profiles.forEach((profile) => {
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="section-header">
+        <h3>${profile.name}</h3>
+        <span class="badge ${profile.remote ? "warn" : "ok"}">${profile.remote ? "remote" : "local"}</span>
+      </div>
+      <p class="muted">${profile.bind}:${profile.port}</p>
+      <div class="inline">
+        <button class="btn secondary" data-action="activate">Activar</button>
+        <button class="btn danger" data-action="delete">Eliminar</button>
+      </div>
+    `;
+    card.querySelector("[data-action='activate']").dataset.name = profile.name;
+    card.querySelector("[data-action='delete']").dataset.name = profile.name;
+    container.appendChild(card);
+  });
+};
+
+export const renderUsage = (state) => {
+  if (!state.usage) return;
+  const { totals, timestamp, byProvider, byModel, byTool } = state.usage;
+  setLcd(document.getElementById("usage-total-tokens"), `tokens ${totals.tokensIn ?? "n/a"}`);
+  setLcd(document.getElementById("usage-total-cost"), `cost ${totals.cost ?? "n/a"}`);
+  const ts = document.getElementById("usage-timestamp");
+  if (ts) ts.textContent = timestamp ? `Updated ${timestamp}` : "--";
+
+  setTable(
+    document.getElementById("usage-providers"),
+    ["Provider", "Tokens", "Cost", "Reqs"],
+    byProvider.map((item) => [item.name, item.tokens ?? "n/a", item.cost ?? "n/a", item.requests ?? "n/a"])
+  );
+  setTable(
+    document.getElementById("usage-models"),
+    ["Model", "Tokens", "Cost"],
+    byModel.map((item) => [item.name, item.tokens ?? "n/a", item.cost ?? "n/a"])
+  );
+  setTable(
+    document.getElementById("usage-tools"),
+    ["Tool", "Usage", "Cost"],
+    byTool.map((item) => [item.name, item.usage ?? "n/a", item.cost ?? "n/a"])
+  );
+};
+
+export const renderMacros = (state) => {
+  const list = document.getElementById("macro-list");
+  if (!list) return;
+  list.innerHTML = "";
+  const entries = Object.entries(state.macros || {});
+  if (!entries.length) {
+    list.innerHTML = "<p class='muted'>Sin macros registradas.</p>";
+    return;
+  }
+  entries.forEach(([name, macro]) => {
+    const row = document.createElement("div");
+    row.className = "inline";
+    row.innerHTML = `<strong>${name}</strong><span class="muted">${macro.description || ""}</span>`;
+    const button = document.createElement("button");
+    button.className = "btn secondary";
+    button.textContent = "Run";
+    button.dataset.name = name;
+    row.appendChild(button);
+    list.appendChild(row);
+  });
+};
+
+export const renderEvents = (state) => {
+  const list = document.getElementById("timeline-list");
+  if (!list) return;
+  if (!state.events.length) {
+    list.innerHTML = "<p class='muted'>Sin eventos.</p>";
+    return;
+  }
+  list.innerHTML = state.events
+    .map(
+      (entry) => `
+      <div class="inline">
+        <span class="badge">${entry.type}</span>
+        <span class="muted">${entry.timestamp}</span>
+      </div>
+    `
+    )
+    .join("");
+};
+
+export const renderLogs = (lines) => {
+  const container = document.getElementById("log-stream");
+  if (!container) return;
+  container.textContent = lines.join("\n");
+};

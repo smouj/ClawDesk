@@ -3,163 +3,92 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawDesk OS · Retro-OS 2000 / Cyber-Y2K Winamp Skin Edition</title>
-    <link rel="icon" href="icons/logo-brain.png" />
+    <title>ClawDesk OS · Retro-OS 2000 minimal</title>
+    <link rel="icon" href="assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body class="retro-os">
-    <div class="noise"></div>
-    <header class="install-header">
-      <div class="titlebar">
-        <div class="titlebar-left">
-          <img class="brand-icon" src="icons/logo-brain.png" alt="ClawDesk logo" />
+  <body>
+    <div class="window">
+      <header class="titlebar">
+        <div class="brand">
+          <img src="assets/brand/logo-brain.svg" alt="ClawDesk logo" />
           <div>
-            <h1>ClawDesk OS Installer</h1>
-            <span>Retro-OS 2000 · Cyber-Y2K Winamp Skin Edition</span>
+            <h1>ClawDesk OS</h1>
+            <small class="muted">Retro-OS 2000 minimal · Security-first control plane</small>
           </div>
         </div>
-        <div class="titlebar-right">
-          <div class="equalizer" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <div class="window-controls" aria-hidden="true">
-            <button class="chrome-btn" type="button">_</button>
-            <button class="chrome-btn" type="button">▢</button>
-            <button class="chrome-btn" type="button">✕</button>
-          </div>
-        </div>
-      </div>
-      <nav class="tab-strip">
-        <a class="tab" href="#install">Instalar</a>
-        <a class="tab" href="#payload">Payload</a>
-        <a class="tab" href="#safe">Safe install</a>
-        <a class="tab" href="#checklist">Checklist</a>
-        <a class="tab" href="dashboard/">Dashboard demo</a>
+        <span class="lcd">Docs-only</span>
+      </header>
+
+      <nav class="tabstrip">
+        <a href="#install">Instalar</a>
+        <a href="#features">Novedades v1.3.0</a>
+        <a href="#security">Seguridad</a>
+        <a href="dashboard/">Dashboard demo</a>
       </nav>
-    </header>
 
-    <main class="install-main">
-      <section class="win hero" id="install">
-        <header class="panel-titlebar">
-          <h2>Instalador ClawDesk OS</h2>
-          <span class="badge ok">Docs-only</span>
-        </header>
-        <div class="panel-body">
-          <p class="muted">
-            Esta es la landing oficial en HTTPS. Para el panel real ejecuta
-            <strong>clawdesk run</strong> en tu host local. No hay llamadas a
-            <code>127.0.0.1</code> desde esta página.
-          </p>
-          <div class="selector-grid">
-            <div class="segment">
-              <button class="chip active" data-mode="human">Soy humano</button>
-              <button class="chip" data-mode="agent">Soy un agente</button>
-            </div>
-            <div class="segment">
-              <button class="chip active" data-os="linux">Linux</button>
-              <button class="chip" data-os="wsl">WSL2</button>
-            </div>
-            <div class="segment">
-              <button class="chip active" data-channel="stable">Stable</button>
-              <button class="chip" data-channel="nightly">Nightly</button>
-            </div>
+      <section class="section" id="install">
+        <div class="grid-2">
+          <div class="card">
+            <h2>Instalación rápida</h2>
+            <p class="muted">
+              Esta landing no llama a localhost. Para el panel real ejecuta en tu host local:
+            </p>
+            <div class="code">curl -fsSL https://github.com/smouj/ClawDesk/releases/latest/download/install.sh | bash</div>
           </div>
-
-          <div class="win panel">
-            <header class="panel-titlebar">
-              <h3 id="install-title">Instalar en 1 comando</h3>
-              <span class="badge" id="install-badge">Stable</span>
-            </header>
-            <div class="panel-body">
-              <div class="terminal" id="install-command"><code></code></div>
-              <div class="panel-actions">
-                <button class="btn-jelly primary" id="copy-command">Copy</button>
-                <a
-                  class="btn-jelly"
-                  id="safe-install"
-                  href="https://github.com/smouj/ClawDesk/releases"
-                  target="_blank"
-                  rel="noreferrer"
-                  >Safe install</a
-                >
-              </div>
-              <p class="muted">Safe install usa releases oficiales + SHA256SUMS verificados.</p>
-            </div>
-          </div>
-
-          <div class="status-grid">
-            <div class="lcd">Loopback-only · 127.0.0.1</div>
-            <div class="lcd">Allow-actions requerido</div>
-            <div class="lcd">Logs SSE + redaction</div>
+          <div class="card">
+            <h2>Safe install</h2>
+            <p class="muted">Usa releases oficiales + checksums verificados.</p>
+            <a class="btn" href="https://github.com/smouj/ClawDesk/releases" target="_blank" rel="noreferrer">
+              Ver releases
+            </a>
           </div>
         </div>
       </section>
 
-      <section class="win" id="payload">
-        <header class="panel-titlebar">
-          <h2>Payload listo para agentes</h2>
-          <span class="badge">Codex / OpenClaw / Clawdbot</span>
-        </header>
-        <div class="panel-body">
-          <p class="muted">
-            Copia y pega este payload para instalación automatizada + salida completa.
-          </p>
-          <div class="terminal" id="agent-payload"><code></code></div>
-          <div class="panel-actions">
-            <button class="btn-jelly primary" id="copy-payload">Copy payload</button>
+      <section class="section" id="features">
+        <div class="grid-2">
+          <div class="card">
+            <h2>v1.3.0 · Multi-Gateway Profiles</h2>
+            <p class="muted">Profiles locales + remotos con opt-in seguro y allowlist.</p>
+            <div class="lcd">local + remote (opt-in)</div>
+          </div>
+          <div class="card">
+            <h2>Automation / Macros</h2>
+            <p class="muted">Workflows seguros con allow_actions y timeouts por paso.</p>
+            <div class="lcd">runner seguro</div>
+          </div>
+          <div class="card">
+            <h2>Usage Center</h2>
+            <p class="muted">Tokens/costes por proveedor/modelo/herramienta (OpenClaw).</p>
+            <div class="lcd">usage real</div>
+          </div>
+          <div class="card">
+            <h2>Timeline / Audit Log</h2>
+            <p class="muted">Eventos de acciones, cambios de perfil y errores.</p>
+            <div class="lcd">events.jsonl</div>
           </div>
         </div>
       </section>
 
-      <section class="win" id="safe">
-        <header class="panel-titlebar">
-          <h2>Safe install (Release + checksum)</h2>
-          <span class="badge ok">Recomendado</span>
-        </header>
-        <div class="panel-body">
-          <p class="muted">
-            El instalador remoto descarga el tar.gz desde Releases y valida SHA256SUMS.
-          </p>
-          <div class="terminal">
-            <code
-              >curl -fsSL
-              https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh |
-              bash</code
-            >
+      <section class="section" id="security">
+        <div class="grid-3">
+          <div class="card">
+            <h3>Loopback-first</h3>
+            <p class="muted">Host allowlist: localhost/127.0.0.1 por defecto.</p>
           </div>
-          <p class="muted">
-            Para nightly: <code>CLAWDESK_CHANNEL=nightly</code>. Para fijar versión:
-            <code>CLAWDESK_VERSION=v1.2.0</code>.
-          </p>
+          <div class="card">
+            <h3>Redacción total</h3>
+            <p class="muted">Tokens y secretos redacted en logs, timeline y exports.</p>
+          </div>
+          <div class="card">
+            <h3>Remote seguro</h3>
+            <p class="muted">Acceso remoto solo por túneles cifrados (Tailscale/WireGuard/SSH).</p>
+          </div>
         </div>
       </section>
 
-      <section class="win" id="checklist">
-        <header class="panel-titlebar">
-          <h2>Checklist post-install</h2>
-          <span class="badge ok">Ready</span>
-        </header>
-        <div class="panel-body">
-          <ol class="ops-list">
-            <li><code>clawdesk doctor</code> — validar gateway, token y puerto.</li>
-            <li><code>clawdesk run</code> — iniciar el daemon local.</li>
-            <li><code>clawdesk status</code> — confirmar API local.</li>
-            <li><code>clawdesk open</code> — abrir dashboard en el navegador.</li>
-          </ol>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <p>ClawDesk v1.2.0 · ClawDesk OS Installer</p>
-    </footer>
-
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-    <script src="app.js"></script>
+      <footer>ClawDesk OS · v1.3.0 · Retro minimal UI.</footer>
+    </div>
   </body>
 </html>

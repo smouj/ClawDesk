@@ -53,6 +53,17 @@ export default [
     rules: baseRules,
   },
   {
+    files: ["app/js/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...browserGlobals,
+      },
+    },
+    rules: baseRules,
+  },
+  {
     files: ["**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2022,

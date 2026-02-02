@@ -1,0 +1,31 @@
+const { execFile } = require("child_process");
+const { detectBinary } = require("./detectBinary");
+
+const runOpenClaw = (args, { env = {}, timeout = 15_000, maxBuffer = 512 * 1024, binary } = {}) =>
+  new Promise((resolve, reject) => {
+    const resolved = binary ? { binary } : detectBinary();
+    execFile(
+      resolved.binary,
+      args,
+      {
+        timeout,
+        maxBuffer,
+        env: {
+          ...process.env,
+          ...env,
+        },
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          const err = new Error(stderr || error.message);
+          err.code = error.code;
+          err.stdout = stdout;
+          err.stderr = stderr;
+          return reject(err);
+        }
+        resolve({ stdout, stderr, binary: resolved.binary });
+      }
+    );
+  });
+
+module.exports = { runOpenClaw };

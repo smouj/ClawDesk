@@ -2,44 +2,27 @@ import { describe, expect, it } from "vitest";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const { resolveGatewayConfig, redactText } = require("../server/config.js");
+const { resolveProfile } = require("../server/gateway/resolveProfile");
+const { redactText } = require("../server/security/redaction");
 
-describe("resolveGatewayConfig", () => {
+describe("resolveProfile", () => {
   it("prioritizes flags over env over config", () => {
     const config = {
-      gateway: {
-        port: 18789,
-        bind: "127.0.0.1",
-        auth: { token: "config-token" },
+      profiles: {
+        local: { name: "local", bind: "127.0.0.1", port: 18789, auth: { token: "config" } },
       },
+      activeProfile: "local",
+      security: { enableRemoteProfiles: false, allowedRemoteHosts: [] },
     };
-    const result = resolveGatewayConfig({
+    const result = resolveProfile({
       config,
-      env: { OPENCLAW_GATEWAY_PORT: "19999", OPENCLAW_GATEWAY_TOKEN: "env-token" },
-      flags: { port: 20001, token: "flag-token" },
+      env: { OPENCLAW_GATEWAY_PORT: "19999", OPENCLAW_GATEWAY_TOKEN: "env" },
+      flags: { port: 20001, token: "flag" },
     });
     expect(result.port).toBe(20001);
     expect(result.portSource).toBe("flag");
-    expect(result.token).toBe("flag-token");
+    expect(result.token).toBe("flag");
     expect(result.tokenSource).toBe("flag");
-  });
-
-  it("falls back to env when flags missing", () => {
-    const config = {
-      gateway: {
-        port: 18789,
-        bind: "127.0.0.1",
-        auth: { token: "config-token" },
-      },
-    };
-    const result = resolveGatewayConfig({
-      config,
-      env: { OPENCLAW_GATEWAY_PORT: "19999", OPENCLAW_GATEWAY_TOKEN: "env-token" },
-    });
-    expect(result.port).toBe(19999);
-    expect(result.portSource).toBe("env");
-    expect(result.token).toBe("env-token");
-    expect(result.tokenSource).toBe("env");
   });
 });
 

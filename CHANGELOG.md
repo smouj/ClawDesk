@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.0] - 2024-09-20
+
+### Added
+
+- Multi-Gateway Profiles con opt-in seguro y allowlist para hosts remotos.
+- Automation/Macros con runner seguro, validación y timeouts por paso.
+- Usage Center con snapshot/histórico de tokens/costes basado en OpenClaw.
+- Event Timeline/Audit log con rotación y redacción de secretos.
+- UI + docs “Retro-OS 2000 minimal + moderno” con tokens y componentes nuevos.
+- Tests de perfiles, macros, redaction, usage parser y cache TTL.
+- CI con lint + test + smoke.
+
+### Changed
+
+- Refactor del servidor y app a módulos limpios, rutas explícitas y utilidades compartidas.
+- Nueva estructura de config con profiles + macros.
+- SSE de logs con heartbeat y filtros simples.
+
+### Removed
+
+- Archivos legacy del servidor y UI anterior.
+
 ## [1.2.0] - 2024-05-23
 
 ### Added
