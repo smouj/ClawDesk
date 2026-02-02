@@ -21,6 +21,11 @@ const request = async (path, options = {}) => {
 
 export const api = {
   getConfig: () => request("/config"),
+  updateConfig: (target, data) =>
+    request("/config", { method: "PUT", body: JSON.stringify({ target, data }) }),
+  listConfigBackups: (target) => request(`/config/backups?target=${target}`),
+  restoreConfigBackup: (target, backup) =>
+    request("/config/restore", { method: "POST", body: JSON.stringify({ target, backup }) }),
   getProfiles: () => request("/profiles"),
   activateProfile: (name) =>
     request("/profiles/activate", { method: "POST", body: JSON.stringify({ name }) }),
@@ -32,6 +37,23 @@ export const api = {
   getHealth: () => request("/health"),
   getGatewayControlUrl: () => request("/gateway/control-url"),
   probeGateway: () => request("/gateway/probe"),
+  getAgents: () => request("/agents"),
+  createAgent: (payload) => request("/agents", { method: "POST", body: JSON.stringify(payload) }),
+  setDefaultAgent: (name) =>
+    request("/agents/default", { method: "POST", body: JSON.stringify({ name }) }),
+  renameAgent: (name, nextName) =>
+    request("/agents/rename", { method: "POST", body: JSON.stringify({ name, nextName }) }),
+  deleteAgent: (name) => request(`/agents/${encodeURIComponent(name)}`, { method: "DELETE" }),
+  importAgent: (agent) =>
+    request("/agents/import", { method: "POST", body: JSON.stringify({ agent }) }),
+  exportAgent: (name) => request(`/agents/export/${encodeURIComponent(name)}`),
+  getSkills: () => request("/skills"),
+  refreshSkills: () => request("/skills/refresh", { method: "POST" }),
+  toggleSkill: (name, enabled) =>
+    request("/skills/toggle", { method: "POST", body: JSON.stringify({ name, enabled }) }),
+  runDoctor: () => request("/doctor", { method: "POST" }),
+  runSecurityAudit: (deep = false) =>
+    request("/security/audit", { method: "POST", body: JSON.stringify({ deep }) }),
   getUsageSnapshot: () => request("/usage/snapshot"),
   getUsageHistory: (range) => request(`/usage/history?range=${range}`),
   exportUsage: (range, format) => request(`/usage/export?range=${range}&format=${format}`),

@@ -21,6 +21,10 @@ const { createUsageRouter } = require("./routes/usage");
 const { createMacrosRouter } = require("./routes/macros");
 const { createEventsRouter } = require("./routes/events");
 const { createLogsRouter } = require("./routes/logs");
+const { createConfigRouter } = require("./routes/config");
+const { createAgentsRouter } = require("./routes/agents");
+const { createSkillsRouter } = require("./routes/skills");
+const { createDoctorRouter } = require("./routes/doctor");
 
 const packageJson = require(path.join(__dirname, "..", "package.json"));
 
@@ -101,25 +105,6 @@ const createServer = () => {
     })
   );
 
-  apiRouter.get("/config", (req, res) => {
-    const latest = loadConfig();
-    res.json({
-      version: packageJson.version,
-      app: latest.app,
-      activeProfile: latest.activeProfile,
-      profiles: Object.values(latest.profiles || {}).map((profile) => ({
-        name: profile.name,
-        bind: profile.bind,
-        port: profile.port,
-      })),
-      security: {
-        allow_actions: latest.security.allow_actions,
-        enableRemoteProfiles: latest.security.enableRemoteProfiles,
-        allowedRemoteHosts: latest.security.allowedRemoteHosts,
-      },
-    });
-  });
-
   apiRouter.get("/openclaw/version", async (req, res) => {
     try {
       const profile = getProfile();
@@ -142,6 +127,14 @@ const createServer = () => {
       secrets: getSecrets(getProfile()),
       logEvent,
     }),
+    createAgentsRouter({ requireAction, logEvent }),
+    createSkillsRouter({ requireAction, logEvent }),
+    createConfigRouter({
+      requireAction,
+      version: packageJson.version,
+      secrets: getSecrets(getProfile()),
+    }),
+    createDoctorRouter({ requireAction, secrets: getSecrets(getProfile()) }),
     createMacrosRouter({
       requireAction,
       actions: {

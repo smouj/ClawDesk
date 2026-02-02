@@ -15,7 +15,7 @@ SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 SERVICE_FILE="$SYSTEMD_USER_DIR/clawdesk.service"
 
 NONINTERACTIVE="${INSTALL_NONINTERACTIVE:-0}"
-TOTAL_STEPS=8
+TOTAL_STEPS=9
 CURRENT_STEP=0
 
 USE_COLOR=1
@@ -73,6 +73,13 @@ log_warn() {
 
 log_fail() {
   printf "%s[FAIL]%s %s\n" "$C_RED" "$C_RESET" "$1" >&2
+}
+
+section_box() {
+  local title="$1"
+  printf "\n%s┌────────────────────────────────────────────┐%s\n" "$C_CYAN" "$C_RESET"
+  printf "%s│ %s%-42s%s │%s\n" "$C_CYAN" "$C_BOLD" "$title" "$C_RESET" "$C_RESET"
+  printf "%s└────────────────────────────────────────────┘%s\n" "$C_CYAN" "$C_RESET"
 }
 
 prompt_default() {
@@ -259,12 +266,14 @@ app = config.get("app", {})
 profiles = config.get("profiles", {})
 active = config.get("activeProfile", "local")
 profile = profiles.get(active) or profiles.get("local") or {}
+print(app.get("host", "127.0.0.1"))
 print(app.get("port", 4178))
 print(profile.get("bind", "127.0.0.1"))
 print(profile.get("port", 18789))
 print(profile.get("token_path", str(Path.home() / ".config/openclaw/gateway.auth.token")))
 PY
   else
+    echo "127.0.0.1"
     echo "4178"
     echo "127.0.0.1"
     echo "18789"
@@ -316,19 +325,36 @@ validate_port() {
 }
 
 check_port_available() {
-  local port="$1"
+  local host="$1"
+  local port="$2"
   python3 - <<PY
 import socket
+host = "$host"
 port = int("$port")
-sock = socket.socket()
+family = socket.AF_INET6 if ":" in host else socket.AF_INET
+sock = socket.socket(family, socket.SOCK_STREAM)
 try:
-    sock.bind(("127.0.0.1", port))
+    sock.bind((host, port))
     print("available")
 except OSError:
     print("busy")
 finally:
     sock.close()
 PY
+}
+
+find_next_port() {
+  local host="$1"
+  local start_port="$2"
+  local port="$start_port"
+  while [ "$port" -le 65535 ]; do
+    if [ "$(check_port_available "$host" "$port")" = "available" ]; then
+      echo "$port"
+      return
+    fi
+    port=$((port + 1))
+  done
+  echo ""
 }
 
 check_tcp() {
@@ -366,11 +392,12 @@ PY
 }
 
 write_config() {
-  local app_port="$1"
-  local gateway_bind="$2"
-  local gateway_port="$3"
-  local token_path="$4"
-  local token_value="$5"
+  local app_bind="$1"
+  local app_port="$2"
+  local gateway_bind="$3"
+  local gateway_port="$4"
+  local token_path="$5"
+  local token_value="$6"
 
   python3 - <<PY
 import json
@@ -378,7 +405,7 @@ from pathlib import Path
 config = {
   "configVersion": 3,
   "app": {
-    "host": "127.0.0.1",
+    "host": "$app_bind",
     "port": int("$app_port"),
     "theme": "dark",
   },
@@ -403,13 +430,21 @@ config = {
       "gateway.start",
       "gateway.stop",
       "gateway.restart",
-      "agent.list",
-      "agent.start",
-      "agent.stop",
-      "agent.restart",
+      "agents.list",
+      "agents.create",
+      "agents.default",
+      "agents.rename",
+      "agents.delete",
+      "agents.import",
+      "agents.export",
       "skills.list",
-      "skills.enable",
-      "skills.disable",
+      "skills.refresh",
+      "skills.toggle",
+      "config.read",
+      "config.write",
+      "openclaw.doctor",
+      "openclaw.audit",
+      "openclaw.audit.deep",
       "support.bundle",
       "secret.rotate",
       "profiles.read",
@@ -832,7 +867,8 @@ OS_NAME="$(uname -s)"
 IS_WSL="$(detect_wsl)"
 log_info "Sistema: $OS_NAME"
 if [ "$IS_WSL" = "1" ]; then
-  log_warn "WSL detectado. localhost es compartido con Windows (abre el dashboard desde Windows usando 127.0.0.1)."
+  log_warn "WSL detectado. localhost es compartido con Windows."
+  log_warn "Buenas prácticas: usa 127.0.0.1 y evita bind a 0.0.0.0."
 fi
 
 missing=0
@@ -876,7 +912,7 @@ log_ok "Dependencias instaladas"
 
 log_step "Configuración y auto-sincronización OpenClaw"
 ensure_config
-read -r DEFAULT_APP_PORT DEFAULT_GATEWAY_BIND DEFAULT_GATEWAY_PORT DEFAULT_TOKEN_PATH < <(read_config_defaults)
+read -r DEFAULT_APP_BIND DEFAULT_APP_PORT DEFAULT_GATEWAY_BIND DEFAULT_GATEWAY_PORT DEFAULT_TOKEN_PATH < <(read_config_defaults)
 read -r OPENCLAW_BIND OPENCLAW_PORT OPENCLAW_TOKEN OPENCLAW_CONFIG_PATH < <(read_openclaw_defaults)
 
 if [ -n "$OPENCLAW_CONFIG_PATH" ]; then
@@ -902,16 +938,45 @@ if [ -n "$OPENCLAW_PORT" ]; then
   DEFAULT_GATEWAY_PORT="$OPENCLAW_PORT"
 fi
 
-APP_PORT_ENV="${CLAWDESK_PORT:-}"
-APP_PORT=$(prompt_default "Puerto para el dashboard (default ${DEFAULT_APP_PORT}): " "${APP_PORT_ENV:-$DEFAULT_APP_PORT}")
-validate_port "Puerto de dashboard" "$APP_PORT"
-
-if [ "$(check_port_available "$APP_PORT")" = "busy" ]; then
-  log_fail "El puerto $APP_PORT ya está en uso."
+DEFAULT_APP_BIND="$(normalize_bind "$DEFAULT_APP_BIND")"
+if [ -z "$DEFAULT_APP_BIND" ]; then
+  DEFAULT_APP_BIND="127.0.0.1"
+fi
+APP_BIND_ENV="${CLAWDESK_BIND:-}"
+APP_BIND=$(prompt_default "Bind del dashboard (default ${DEFAULT_APP_BIND}): " "${APP_BIND_ENV:-$DEFAULT_APP_BIND}")
+APP_BIND=$(normalize_bind "$APP_BIND")
+if is_blocked_bind "$APP_BIND"; then
+  log_fail "Bind ${APP_BIND} no permitido por seguridad."
   exit 1
 fi
+if ! is_loopback "$APP_BIND"; then
+  confirm_non_loopback "$APP_BIND"
+fi
 
-GATEWAY_BIND_ENV="${CLAWDESK_BIND:-}"
+APP_PORT_ENV="${CLAWDESK_PORT:-}"
+APP_PORT=$(prompt_default "Puerto del dashboard (default ${DEFAULT_APP_PORT}): " "${APP_PORT_ENV:-$DEFAULT_APP_PORT}")
+validate_port "Puerto de dashboard" "$APP_PORT"
+
+if [ "$(check_port_available "$APP_BIND" "$APP_PORT")" = "busy" ]; then
+  local_suggested_port="$(find_next_port "$APP_BIND" "$((APP_PORT + 1))")"
+  if [ -z "$local_suggested_port" ]; then
+    log_fail "El puerto $APP_PORT ya está en uso y no se encontró alternativa."
+    exit 1
+  fi
+  log_warn "El puerto $APP_PORT ya está en uso. Sugerencia: $local_suggested_port"
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    APP_PORT="$local_suggested_port"
+    log_warn "Modo no interactivo: usando puerto sugerido $APP_PORT"
+  else
+    APP_PORT=$(prompt_default "Confirma nuevo puerto (default ${local_suggested_port}): " "$local_suggested_port")
+  fi
+fi
+
+DEFAULT_GATEWAY_BIND="$(normalize_bind "$DEFAULT_GATEWAY_BIND")"
+if [ -z "$DEFAULT_GATEWAY_BIND" ]; then
+  DEFAULT_GATEWAY_BIND="127.0.0.1"
+fi
+GATEWAY_BIND_ENV="${CLAWDESK_GATEWAY_BIND:-}"
 GATEWAY_BIND=$(prompt_default "Bind del gateway (loopback recomendado, default ${DEFAULT_GATEWAY_BIND}): " "${GATEWAY_BIND_ENV:-$DEFAULT_GATEWAY_BIND}")
 GATEWAY_BIND=$(normalize_bind "$GATEWAY_BIND")
 if is_blocked_bind "$GATEWAY_BIND"; then
@@ -925,6 +990,21 @@ fi
 GATEWAY_PORT_ENV="${CLAWDESK_GATEWAY_PORT:-${OPENCLAW_GATEWAY_PORT:-}}"
 GATEWAY_PORT=$(prompt_default "Puerto del gateway (default ${DEFAULT_GATEWAY_PORT}): " "${GATEWAY_PORT_ENV:-$DEFAULT_GATEWAY_PORT}")
 validate_port "Puerto del gateway" "$GATEWAY_PORT"
+
+if [ "$(check_port_available "$GATEWAY_BIND" "$GATEWAY_PORT")" = "busy" ]; then
+  gateway_suggested_port="$(find_next_port "$GATEWAY_BIND" "$((GATEWAY_PORT + 1))")"
+  if [ -z "$gateway_suggested_port" ]; then
+    log_fail "El puerto del gateway $GATEWAY_PORT ya está en uso y no hay alternativa."
+    exit 1
+  fi
+  log_warn "El puerto del gateway $GATEWAY_PORT está ocupado. Sugerencia: $gateway_suggested_port"
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    GATEWAY_PORT="$gateway_suggested_port"
+    log_warn "Modo no interactivo: usando puerto sugerido $GATEWAY_PORT"
+  else
+    GATEWAY_PORT=$(prompt_default "Confirma nuevo puerto del gateway (default ${gateway_suggested_port}): " "$gateway_suggested_port")
+  fi
+fi
 
 TOKEN_PATH_ENV="${CLAWDESK_TOKEN_PATH:-}"
 TOKEN_PATH=$(prompt_default "Ruta de gateway.auth.token (default ${DEFAULT_TOKEN_PATH}): " "${TOKEN_PATH_ENV:-$DEFAULT_TOKEN_PATH}")
@@ -955,7 +1035,7 @@ else
   log_warn "Token no encontrado. Exporta OPENCLAW_GATEWAY_TOKEN, crea $TOKEN_PATH o configura OpenClaw."
 fi
 
-write_config "$APP_PORT" "$GATEWAY_BIND" "$GATEWAY_PORT" "$TOKEN_PATH" "$TOKEN_VALUE"
+write_config "$APP_BIND" "$APP_PORT" "$GATEWAY_BIND" "$GATEWAY_PORT" "$TOKEN_PATH" "$TOKEN_VALUE"
 ensure_secret
 
 if [ "$(check_tcp "$GATEWAY_BIND" "$GATEWAY_PORT")" = "open" ]; then
@@ -983,29 +1063,27 @@ install_service
 log_step "Self-test local"
 if "$APP_NAME" run >/dev/null 2>&1; then
   SECRET_VALUE="$(cat "$SECRET_FILE")"
-  python3 - <<PY
-from urllib.request import Request, urlopen
-import json
-url = "http://127.0.0.1:${APP_PORT}/api/health"
-req = Request(url, headers={"Authorization": f"Bearer {open('$SECRET_FILE').read().strip()}"})
-try:
-    with urlopen(req, timeout=4) as resp:
-        payload = resp.read().decode("utf-8")
-        data = json.loads(payload)
-        print("✅ Health OK:", data.get("status"), "| gateway:", data.get("gateway", {}).get("status"))
-except Exception as exc:
-    print("⚠️ Health check falló:", exc)
-PY
+  if curl -fsSL "http://${APP_BIND}:${APP_PORT}/api/health" -H "Authorization: Bearer ${SECRET_VALUE}" >/dev/null 2>&1; then
+    log_ok "Health check OK (/api/health)"
+  else
+    log_warn "Health check falló. Revisa logs en ${LOG_PATH}"
+  fi
 else
   log_warn "No se pudo iniciar el daemon en self-test. Ejecuta: clawdesk run"
 fi
 
-log_step "Instalación completa"
-printf "\n%s%sInstalación completa%s\n" "$C_GREEN" "$C_BOLD" "$C_RESET"
-printf "%sNext steps:%s\n" "$C_CYAN" "$C_RESET"
+log_step "Resumen final"
+section_box "✅ Instalación completa"
+printf "%sURL del dashboard:%s http://%s:%s\n" "$C_CYAN" "$C_RESET" "$APP_BIND" "$APP_PORT"
+printf "%sConfig:%s %s\n" "$C_CYAN" "$C_RESET" "$CONFIG_FILE"
+printf "%sSecret:%s %s\n" "$C_CYAN" "$C_RESET" "$SECRET_FILE"
+printf "%sLogs:%s %s\n" "$C_CYAN" "$C_RESET" "$LOG_PATH"
+printf "\n%sComandos esenciales:%s\n" "$C_BOLD" "$C_RESET"
 printf "  - %s run\n" "$APP_NAME"
 printf "  - %s status\n" "$APP_NAME"
 printf "  - %s doctor\n" "$APP_NAME"
 printf "  - %s open\n" "$APP_NAME"
-printf "%sURL local:%s http://127.0.0.1:%s\n" "$C_CYAN" "$C_RESET" "$APP_PORT"
-printf "%sConfig:%s %s\n" "$C_CYAN" "$C_RESET" "$CONFIG_FILE"
+printf "  - tail -f %s\n" "$LOG_PATH"
+printf "\n%sGestión de agentes/skills:%s\n" "$C_BOLD" "$C_RESET"
+printf "  - Abre Mission Control > Agents / Skills / Config / Security / Logs\n"
+printf "  - Usa OpenClaw CLI para acciones avanzadas (doctor/audit).\n"

@@ -3,7 +3,13 @@ const { detectBinary } = require("./detectBinary");
 
 const sanitizeArgs = (args) => {
   if (!Array.isArray(args)) return [];
-  return args.filter((arg) => typeof arg === "string" && arg.trim().length > 0);
+  return args.filter((arg) => {
+    if (typeof arg !== "string") return false;
+    const trimmed = arg.trim();
+    if (!trimmed) return false;
+    if (/[;&|`$<>\\n\\r]/.test(trimmed)) return false;
+    return true;
+  });
 };
 
 const runOpenClaw = (args, { env = {}, timeout = 15_000, maxBuffer = 512 * 1024, binary } = {}) =>

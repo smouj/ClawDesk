@@ -9,6 +9,11 @@ import {
   renderEvents,
   renderLogs,
   renderSettings,
+  renderAgents,
+  renderSkills,
+  renderConfig,
+  renderSecurity,
+  renderDiagnostics,
 } from "./ui/render.js";
 import { loadDashboard } from "./pages/dashboard.js";
 import { loadProfiles } from "./pages/profiles.js";
@@ -17,6 +22,10 @@ import { loadUsage } from "./pages/usage.js";
 import { loadTimeline } from "./pages/timeline.js";
 import { loadLogs } from "./pages/logs.js";
 import { initSettings } from "./pages/settings.js";
+import { loadAgents } from "./pages/agents.js";
+import { loadSkills } from "./pages/skills.js";
+import { loadConfigDetail } from "./pages/config.js";
+import { loadSecurity } from "./pages/security.js";
 
 const AUTO_SYNC_INTERVAL_MS = 8000;
 
@@ -50,6 +59,11 @@ const renderAll = (state) => {
   renderEvents(state);
   renderLogs(state.logs || []);
   renderSettings(state);
+  renderAgents(state);
+  renderSkills(state);
+  renderConfig(state);
+  renderSecurity(state);
+  renderDiagnostics(state);
   syncProfileSelect(state);
 };
 
@@ -90,6 +104,10 @@ const init = async () => {
   initSettings();
   try {
     await loadDashboard({ api, setState });
+    await loadConfigDetail({ api, setState });
+    await loadAgents({ api, setState });
+    await loadSkills({ api, setState });
+    await loadSecurity({ api, setState });
     await loadProfiles({ api, setState });
     await loadMacros({ api, setState });
     await loadUsage({ api, setState });
@@ -132,6 +150,16 @@ const init = async () => {
     await loadDashboard({ api, setState });
   });
 
+  document.getElementById("agents-refresh")?.addEventListener("click", async () => {
+    await loadAgents({ api, setState });
+  });
+  document.getElementById("skills-refresh")?.addEventListener("click", async () => {
+    await loadSkills({ api, setState });
+  });
+  document.getElementById("config-refresh")?.addEventListener("click", async () => {
+    await loadConfigDetail({ api, setState });
+  });
+
   document.getElementById("open-control-ui")?.addEventListener("click", async () => {
     try {
       const data = await api.getGatewayControlUrl();
@@ -152,6 +180,216 @@ const init = async () => {
     .getElementById("view-events")
     ?.addEventListener("click", () => setActivePage("timeline"));
   document.getElementById("open-logs")?.addEventListener("click", () => setActivePage("logs"));
+
+  document.getElementById("agents-list")?.addEventListener("click", async (event) => {
+    const action = event.target.dataset.action;
+    const name = event.target.dataset.name;
+    if (!action || !name) return;
+    try {
+      if (action === "default") {
+        await api.setDefaultAgent(name);
+      }
+      if (action === "delete") {
+        await api.deleteAgent(name);
+      }
+      if (action === "export") {
+        const data = await api.exportAgent(name);
+        const blob = new Blob([JSON.stringify(data.agent, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${name}.agent.json`;
+        link.click();
+      }
+      await loadAgents({ api, setState });
+      showToast("Acción aplicada", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+
+  document.getElementById("agent-form")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    try {
+      const metadataRaw = String(formData.get("metadata") || "").trim();
+      const metadata = metadataRaw ? JSON.parse(metadataRaw) : {};
+      await api.createAgent({
+        name: formData.get("name"),
+        provider: formData.get("provider"),
+        model: formData.get("model"),
+        storage_path: formData.get("storage_path"),
+        metadata,
+      });
+      event.target.reset();
+      await loadAgents({ api, setState });
+      showToast("Agente creado", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+
+  document.getElementById("agent-import-btn")?.addEventListener("click", async () => {
+    const textarea = document.getElementById("agent-import");
+    if (!textarea?.value) return;
+    try {
+      const payload = JSON.parse(textarea.value);
+      await api.importAgent(payload);
+      textarea.value = "";
+      await loadAgents({ api, setState });
+      showToast("Agente importado", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+
+  document.getElementById("skills-list")?.addEventListener("click", async (event) => {
+    const action = event.target.dataset.action;
+    const name = event.target.dataset.name;
+    if (action !== "toggle" || !name) return;
+    const enabled = event.target.dataset.enabled === "true";
+    try {
+      await api.toggleSkill(name, enabled);
+      await loadSkills({ api, setState });
+      showToast("Skill actualizada", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+
+  document.getElementById("skills-copy")?.addEventListener("click", async () => {
+    const requirements = document.getElementById("skills-requirements")?.textContent || "";
+    if (!requirements.trim()) return;
+    await navigator.clipboard.writeText(requirements);
+    showToast("Comandos copiados", "ok");
+  });
+
+  const parseJsonFromTextarea = (id) => {
+    const textarea = document.getElementById(id);
+    if (!textarea) return null;
+    return JSON.parse(textarea.value);
+  };
+
+  document.getElementById("clawdesk-save")?.addEventListener("click", async () => {
+    try {
+      await api.updateConfig("clawdesk", parseJsonFromTextarea("clawdesk-config"));
+      await loadConfigDetail({ api, setState });
+      showToast("Config guardada", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+  document.getElementById("openclaw-save")?.addEventListener("click", async () => {
+    try {
+      await api.updateConfig("openclaw", parseJsonFromTextarea("openclaw-config"));
+      await loadConfigDetail({ api, setState });
+      showToast("Config OpenClaw guardada", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+  document.getElementById("clawdesk-format")?.addEventListener("click", () => {
+    const textarea = document.getElementById("clawdesk-config");
+    if (!textarea) return;
+    try {
+      textarea.value = JSON.stringify(JSON.parse(textarea.value), null, 2);
+    } catch (error) {
+      showToast(`JSON inválido: ${error.message}`, "warn");
+    }
+  });
+  document.getElementById("openclaw-format")?.addEventListener("click", () => {
+    const textarea = document.getElementById("openclaw-config");
+    if (!textarea) return;
+    try {
+      textarea.value = JSON.stringify(JSON.parse(textarea.value), null, 2);
+    } catch (error) {
+      showToast(`JSON inválido: ${error.message}`, "warn");
+    }
+  });
+  document.getElementById("clawdesk-validate")?.addEventListener("click", () => {
+    try {
+      JSON.parse(document.getElementById("clawdesk-config").value);
+      showToast("JSON válido", "ok");
+    } catch (error) {
+      showToast(`JSON inválido: ${error.message}`, "warn");
+    }
+  });
+  document.getElementById("openclaw-validate")?.addEventListener("click", () => {
+    try {
+      JSON.parse(document.getElementById("openclaw-config").value);
+      showToast("JSON válido", "ok");
+    } catch (error) {
+      showToast(`JSON inválido: ${error.message}`, "warn");
+    }
+  });
+
+  const refreshBackups = async () => {
+    try {
+      const clawdeskBackups = await api.listConfigBackups("clawdesk");
+      const openclawBackups = await api.listConfigBackups("openclaw");
+      const clawdeskSelect = document.getElementById("clawdesk-backups");
+      const openclawSelect = document.getElementById("openclaw-backups");
+      if (clawdeskSelect) {
+        clawdeskSelect.innerHTML = (clawdeskBackups.backups || [])
+          .map((entry) => `<option value="${entry}">${entry}</option>`)
+          .join("");
+      }
+      if (openclawSelect) {
+        openclawSelect.innerHTML = (openclawBackups.backups || [])
+          .map((entry) => `<option value="${entry}">${entry}</option>`)
+          .join("");
+      }
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  };
+  await refreshBackups();
+
+  document.getElementById("clawdesk-restore")?.addEventListener("click", async () => {
+    const backup = document.getElementById("clawdesk-backups")?.value;
+    if (!backup) return;
+    await api.restoreConfigBackup("clawdesk", backup);
+    await loadConfigDetail({ api, setState });
+    showToast("Backup restaurado", "ok");
+  });
+  document.getElementById("openclaw-restore")?.addEventListener("click", async () => {
+    const backup = document.getElementById("openclaw-backups")?.value;
+    if (!backup) return;
+    await api.restoreConfigBackup("openclaw", backup);
+    await loadConfigDetail({ api, setState });
+    showToast("Backup restaurado", "ok");
+  });
+
+  document.getElementById("security-audit")?.addEventListener("click", async () => {
+    try {
+      const result = await api.runSecurityAudit(false);
+      setState({ securityReport: result.summary || "Audit completado." });
+      showToast("Audit ejecutado", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+  document.getElementById("security-audit-deep")?.addEventListener("click", async () => {
+    try {
+      const result = await api.runSecurityAudit(true);
+      setState({ securityReport: result.summary || "Audit deep completado." });
+      showToast("Audit deep ejecutado", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
+
+  document.getElementById("run-doctor")?.addEventListener("click", async () => {
+    try {
+      const result = await api.runDoctor();
+      setState({ securityReport: result.summary || "Doctor ejecutado." });
+      showToast("Doctor ejecutado", "ok");
+    } catch (error) {
+      showToast(error.message, "warn");
+    }
+  });
 
   const bindAction = (id, action, label) => {
     const button = document.getElementById(id);

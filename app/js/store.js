@@ -1,5 +1,6 @@
 const state = {
   config: null,
+  configDetail: null,
   profiles: [],
   gateway: null,
   usage: null,
@@ -7,6 +8,9 @@ const state = {
   macros: {},
   events: [],
   logs: [],
+  agentsData: null,
+  skillsData: null,
+  securityReport: null,
 };
 
 const listeners = new Set();

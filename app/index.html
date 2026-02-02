@@ -53,7 +53,52 @@
           aria-controls="page-dashboard"
           tabindex="0"
         >
-          Estado
+          Inicio
+        </button>
+        <button
+          data-page="agents"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-agents"
+          tabindex="-1"
+        >
+          Agentes
+        </button>
+        <button
+          data-page="skills"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-skills"
+          tabindex="-1"
+        >
+          Skills
+        </button>
+        <button
+          data-page="config"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-config"
+          tabindex="-1"
+        >
+          Configuración
+        </button>
+        <button
+          data-page="security"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-security"
+          tabindex="-1"
+        >
+          Seguridad
+        </button>
+        <button
+          data-page="logs"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-logs"
+          tabindex="-1"
+        >
+          Logs
         </button>
         <button
           data-page="profiles"
@@ -63,15 +108,6 @@
           tabindex="-1"
         >
           Perfiles
-        </button>
-        <button
-          data-page="macros"
-          role="tab"
-          aria-selected="false"
-          aria-controls="page-macros"
-          tabindex="-1"
-        >
-          Macros
         </button>
         <button
           data-page="usage"
@@ -92,22 +128,13 @@
           Línea de tiempo
         </button>
         <button
-          data-page="logs"
+          data-page="macros"
           role="tab"
           aria-selected="false"
-          aria-controls="page-logs"
+          aria-controls="page-macros"
           tabindex="-1"
         >
-          Logs
-        </button>
-        <button
-          data-page="settings"
-          role="tab"
-          aria-selected="false"
-          aria-controls="page-settings"
-          tabindex="-1"
-        >
-          Ajustes
+          Macros
         </button>
       </nav>
 
@@ -244,6 +271,156 @@
         </div>
       </section>
 
+      <section class="page" id="page-agents">
+        <div class="toolbar">
+          <div>
+            <h2>Agentes & Bots</h2>
+            <p class="muted">Gestiona agentes de OpenClaw con claridad y seguridad.</p>
+          </div>
+          <button class="btn" id="agents-refresh" aria-label="Actualizar agentes">Actualizar</button>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-header">
+              <h3>Agentes disponibles</h3>
+              <span class="badge" id="agents-source">origen</span>
+            </div>
+            <div id="agents-list"></div>
+            <p class="muted" id="agents-empty">Sin agentes registrados.</p>
+          </div>
+          <div class="card">
+            <h3>Crear agente</h3>
+            <form id="agent-form" class="stack">
+              <label>
+                Nombre
+                <input name="name" type="text" placeholder="main" required />
+              </label>
+              <label>
+                Proveedor
+                <input name="provider" type="text" placeholder="openai" />
+              </label>
+              <label>
+                Modelo
+                <input name="model" type="text" placeholder="gpt-4o-mini" />
+              </label>
+              <label>
+                Ruta de almacenamiento
+                <input name="storage_path" type="text" placeholder="~/.openclaw/agents/main" />
+              </label>
+              <label>
+                Metadata (JSON opcional)
+                <textarea name="metadata" rows="4" placeholder="{\"region\":\"eu\"}"></textarea>
+              </label>
+              <button class="btn" type="submit">Crear agente</button>
+            </form>
+            <div class="divider"></div>
+            <h3>Importar agente</h3>
+            <textarea id="agent-import" rows="4" placeholder='{\"name\":\"demo\",\"provider\":\"local\"}'></textarea>
+            <button class="btn secondary" id="agent-import-btn">Importar</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-skills">
+        <div class="toolbar">
+          <div>
+            <h2>Centro de Skills</h2>
+            <p class="muted">Activa skills, valida requisitos y refresca estado.</p>
+          </div>
+          <div class="inline">
+            <button class="btn secondary" id="skills-refresh">Re-escanear</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-header">
+              <h3>Skills detectadas</h3>
+              <span class="badge" id="skills-source">origen</span>
+            </div>
+            <div id="skills-list"></div>
+            <p class="muted" id="skills-empty">Sin skills registradas.</p>
+          </div>
+          <div class="card">
+            <h3>Requisitos faltantes</h3>
+            <p class="muted">No se instalan automáticamente. Copia y ejecuta manualmente.</p>
+            <div class="terminal" id="skills-requirements">Sin requisitos pendientes.</div>
+            <button class="btn ghost" id="skills-copy">Copiar comandos</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-config">
+        <div class="toolbar">
+          <div>
+            <h2>Centro de Configuración</h2>
+            <p class="muted">Configura ClawDesk y OpenClaw con validación y backups.</p>
+          </div>
+          <button class="btn secondary" id="config-refresh">Recargar</button>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="section-header">
+              <h3>ClawDesk config.json</h3>
+              <span class="badge" id="config-perms">600</span>
+            </div>
+            <textarea id="clawdesk-config" rows="18" spellcheck="false"></textarea>
+            <div class="inline wrap">
+              <button class="btn" id="clawdesk-save">Guardar</button>
+              <button class="btn secondary" id="clawdesk-validate">Validar</button>
+              <button class="btn ghost" id="clawdesk-format">Formatear</button>
+            </div>
+            <div class="inline">
+              <select id="clawdesk-backups"></select>
+              <button class="btn danger" id="clawdesk-restore">Restaurar backup</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-header">
+              <h3>OpenClaw openclaw.json</h3>
+              <span class="badge" id="openclaw-perms">n/a</span>
+            </div>
+            <textarea id="openclaw-config" rows="18" spellcheck="false"></textarea>
+            <div class="inline wrap">
+              <button class="btn" id="openclaw-save">Guardar</button>
+              <button class="btn secondary" id="openclaw-validate">Validar</button>
+              <button class="btn ghost" id="openclaw-format">Formatear</button>
+            </div>
+            <div class="inline">
+              <select id="openclaw-backups"></select>
+              <button class="btn danger" id="openclaw-restore">Restaurar backup</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-security">
+        <div class="toolbar">
+          <div>
+            <h2>Centro de Seguridad</h2>
+            <p class="muted">Loopback-only por defecto. Acceso remoto solo con túneles cifrados.</p>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Buenas prácticas</h3>
+            <ul class="list">
+              <li>✅ Loopback-only (127.0.0.1 / ::1).</li>
+              <li>⚠️ Acceso remoto: usa SSH/Tailscale/WireGuard.</li>
+              <li>✅ Secretos redactados en UI y logs.</li>
+            </ul>
+            <div class="inline">
+              <button class="btn secondary" id="run-doctor">OpenClaw doctor</button>
+              <button class="btn secondary" id="security-audit">Audit de seguridad</button>
+              <button class="btn danger" id="security-audit-deep">Audit profundo</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Resultado de auditoría</h3>
+            <div class="terminal" id="security-output">Ejecuta un audit para ver resultados.</div>
+          </div>
+        </div>
+      </section>
+
       <section class="page" id="page-profiles">
         <div class="toolbar">
           <div>
@@ -373,6 +550,16 @@
             <button class="btn ghost" id="clear-logs" aria-label="Limpiar vista de logs">
               Limpiar vista
             </button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Diagnóstico rápido</h3>
+            <div id="diagnostics-summary"></div>
+          </div>
+          <div class="card">
+            <h3>Health checks</h3>
+            <div id="health-checks"></div>
           </div>
         </div>
         <div class="terminal" id="log-stream"></div>

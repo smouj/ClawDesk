@@ -1,5 +1,7 @@
 const express = require("express");
 const net = require("net");
+const os = require("os");
+const fs = require("fs");
 
 const { detectBinary } = require("../openclaw/detectBinary");
 const { runOpenClaw } = require("../openclaw/run");
@@ -22,6 +24,14 @@ const probeTcp = (host, port) =>
     socket.connect(port, host, () => done(true));
   });
 
+const detectWsl = () => {
+  try {
+    return fs.readFileSync("/proc/version", "utf-8").toLowerCase().includes("microsoft");
+  } catch {
+    return false;
+  }
+};
+
 const createHealthRouter = ({ getProfile, createEnv, version } = {}) => {
   const router = express.Router();
   router.get("/health", async (req, res) => {
@@ -32,6 +42,13 @@ const createHealthRouter = ({ getProfile, createEnv, version } = {}) => {
       time: new Date().toISOString(),
       version: version || "unknown",
       uptime_s: Math.round(process.uptime()),
+      system: {
+        platform: os.platform(),
+        release: os.release(),
+        arch: os.arch(),
+        hostname: os.hostname(),
+        is_wsl: detectWsl(),
+      },
       gateway: {
         ok: false,
         status: "unknown",
