@@ -91,7 +91,13 @@ const createServer = () => {
 
   const apiRouter = express.Router();
   apiRouter.use(apiAuth, rateLimit());
-  apiRouter.use(createHealthRouter());
+  apiRouter.use(
+    createHealthRouter({
+      getProfile,
+      createEnv,
+      version: packageJson.version,
+    })
+  );
 
   apiRouter.get("/config", (req, res) => {
     const latest = loadConfig();

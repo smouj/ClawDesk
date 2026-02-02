@@ -1,82 +1,124 @@
 # ClawDesk
 
-ClawDesk 🦞 — panel local, security-first, para gestionar OpenClaw desde tu máquina con estética Retro-OS 2000 / Cyber-Y2K Winamp Skin Edition.
+ClawDesk 🦞 es un dashboard **local** y **security-first** para operar OpenClaw desde tu máquina. Todo corre en loopback (`127.0.0.1`) y el acceso remoto **solo** se recomienda vía túneles cifrados.
 
-> ⚠️ **Seguridad primero**: ClawDesk solo escucha en `127.0.0.1`/`localhost`. No expongas el dashboard a internet. Para acceso remoto, usa túneles cifrados (Tailscale/WireGuard/SSH).
+> ⚠️ **Seguridad primero**: no expongas el dashboard a Internet. Si necesitas acceso remoto usa **Tailscale, WireGuard o SSH Tunneling**.
 
-## ✨ Qué incluye (v2.0.0)
+---
 
-- **Daemon local** (Node + Express) que sirve UI y expone `/api/*`.
-- **Compatibilidad OpenClaw total** (probe/start/stop/restart, dashboard link).
-- **Logs en vivo via SSE** con filtros, pausa y descarga.
-- **Auth local** con secret y rotación segura.
-- **Allow-actions** obligatorio para acciones semánticas.
-- **Landing Retro-OS** para instalación y payloads de agentes.
-- **Instalación git-first** con instalador interactivo.
+## ✅ Requisitos
 
-## 🧭 Instalación (git clone + install.sh)
+- Node.js **>= 18**
+- npm
+- bash
+- curl, tar, python3
+- OpenClaw (opcional, para control completo)
+
+---
+
+## 🚀 Instalación oficial (git clone + install.sh)
 
 ```bash
 git clone https://github.com/smouj/ClawDesk.git
 cd ClawDesk
-./install.sh
+bash install.sh
 ```
 
-Opciones:
+### Modo no interactivo
 
-- `CLAWDESK_REF=main` para elegir la rama al clonar (si usas el instalador remoto).
-- `CLAWDESK_WSL=1` si estás en WSL y quieres forzar el aviso de interoperabilidad.
+```bash
+INSTALL_NONINTERACTIVE=1 bash install.sh
+```
 
-## ▶️ Ejecutar
+El instalador:
+- Valida dependencias y permisos.
+- Configura `~/.config/clawdesk/config.json`.
+- Sincroniza token/gateway de OpenClaw automáticamente.
+- Instala el comando `clawdesk`.
+- Crea un servicio `systemd --user` cuando es posible.
+
+---
+
+## ▶️ Comandos principales
 
 ```bash
 clawdesk run
+clawdesk status
+clawdesk doctor
+clawdesk open
 ```
 
-## 📦 Comandos disponibles
+Comandos disponibles:
+- `clawdesk run` / `clawdesk start` → inicia el dashboard.
+- `clawdesk stop` / `clawdesk restart` → controla el daemon.
+- `clawdesk status` → estado + healthcheck `/api/health`.
+- `clawdesk doctor` → diagnóstico y auto-sincronización OpenClaw.
+- `clawdesk config` → imprime `config.json`.
+- `clawdesk secret rotate` → rota el secret local.
+- `clawdesk uninstall` → elimina instalación local.
 
-- `clawdesk run` → inicia el daemon en `http://127.0.0.1:<puerto>`.
-- `clawdesk status` → estado del daemon + ping a `/api/health`.
-- `clawdesk stop` → detiene el daemon.
-- `clawdesk open` → imprime la URL local.
-- `clawdesk config` → muestra el `config.json`.
-- `clawdesk doctor` → diagnóstico local (OpenClaw, token, puerto, gateway).
-- `clawdesk secret rotate` → rota el secret y revoca sesiones.
-- `clawdesk uninstall` → desinstala archivos locales.
+---
 
-## 🔒 Seguridad
+## 🔁 OpenClaw Sync automático
 
-- **No comandos arbitrarios**: se usan `allow_actions` (acciones semánticas).
-- **Exec seguro**: `openclaw` se ejecuta con `execFile` y `shell=false`.
-- **Auth local**: la API exige `Authorization: Bearer <secret>`.
-- **Headers**: CSP estricta + allowlist de host/origin + CORS loopback-only.
-- **Redacción**: support bundle elimina tokens/secretos.
+ClawDesk detecta y configura automáticamente:
+- Binario `openclaw` (o `clawdbot`, `moltbot`).
+- Gateway `127.0.0.1:18789` (o el puerto que uses).
+- Token desde `~/.config/openclaw/gateway.auth.token` o `OPENCLAW_GATEWAY_TOKEN`.
 
-## 🗂️ Estructura del repo
-
-```
-app/          # UI local (source of truth)
-server/       # daemon Node.js + API
-config/       # plantilla config.json
-scripts/      # utilidades (sync docs, install remoto)
-docs/         # landing GH Pages + dashboard demo
-```
-
-## 🧪 Desarrollo
-
-Sincroniza docs desde la UI:
+El token se redactiona (solo se muestran los últimos 4 caracteres). Para inspección, usa:
 
 ```bash
-./scripts/sync-docs.sh
+clawdesk doctor
 ```
+
+---
+
+## 🧪 Calidad y verificación
+
+```bash
+npm run lint
+npm run format
+npm run smoke
+```
+
+---
 
 ## 🧰 Troubleshooting rápido
 
 - **OpenClaw no detectado**: asegúrate de que `openclaw` esté en PATH.
-- **Token ausente**: revisa `gateway.auth.token` o exporta `OPENCLAW_GATEWAY_TOKEN`.
-- **Puerto ocupado**: cambia el puerto en `config.json` y reinicia.
-- **Fallo al clonar**: valida conectividad con GitHub y que `git` esté instalado.
+- **Token ausente**: exporta `OPENCLAW_GATEWAY_TOKEN` o crea `~/.config/openclaw/gateway.auth.token`.
+- **Puerto ocupado**: cambia `app.port` en `~/.config/clawdesk/config.json` y reinicia.
+- **WSL**: recuerda que `localhost` es compartido con Windows.
 
 ---
 
-¿Necesitas acceso remoto? Usa **túneles cifrados** (Tailscale/WireGuard/SSH). Nunca abras el puerto del dashboard en el router.
+## 🔒 Seguridad
+
+- Loopback-only (no 0.0.0.0).
+- CSP estricta + allowlist de host/origin.
+- Auth local con secret y rotación.
+- Redacción de tokens en logs y eventos.
+
+---
+
+## 🗂️ Estructura del repo
+
+```
+app/          # UI local
+server/       # daemon Node.js + API
+docs/         # GitHub Pages (solo instrucciones de instalación)
+scripts/      # utilidades internas
+```
+
+---
+
+## 🧹 Desinstalación
+
+```bash
+bash uninstall.sh
+```
+
+---
+
+Si necesitas acceso remoto, usa **túneles cifrados** (Tailscale/WireGuard/SSH). Nunca abras el puerto del dashboard al internet público.
