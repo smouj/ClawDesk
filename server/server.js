@@ -3,7 +3,7 @@ const path = require("path");
 const express = require("express");
 const helmet = require("helmet");
 
-const { loadConfig, PID_PATH, LOG_PATH, EVENTS_PATH } = require("./config/loadConfig");
+const { loadConfig, LOG_PATH, EVENTS_PATH } = require("./config/loadConfig");
 const { resolveProfile } = require("./gateway/resolveProfile");
 const { detectBinary } = require("./openclaw/detectBinary");
 const { runOpenClaw } = require("./openclaw/run");

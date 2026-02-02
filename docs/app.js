@@ -20,10 +20,7 @@ const channelMap = {
 
 const buildCommand = () => {
   const ref = channelMap[state.channel] || "main";
-  const lines = [
-    `git clone --depth 1 --branch ${ref} ${repoUrl}`,
-    "cd ClawDesk",
-  ];
+  const lines = [`git clone --depth 1 --branch ${ref} ${repoUrl}`, "cd ClawDesk"];
   const installLine = state.os === "wsl" ? "CLAWDESK_WSL=1 ./install.sh" : "./install.sh";
   lines.push(installLine);
   return lines.join("\n");

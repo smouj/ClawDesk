@@ -31,6 +31,7 @@ INSTALL_NONINTERACTIVE=1 bash install.sh
 ```
 
 El instalador:
+
 - Valida dependencias y permisos.
 - Configura `~/.config/clawdesk/config.json`.
 - Sincroniza token/gateway de OpenClaw automáticamente.
@@ -49,6 +50,7 @@ clawdesk open
 ```
 
 Comandos disponibles:
+
 - `clawdesk run` / `clawdesk start` → inicia el dashboard.
 - `clawdesk stop` / `clawdesk restart` → controla el daemon.
 - `clawdesk status` → estado + healthcheck `/api/health`.
@@ -62,6 +64,7 @@ Comandos disponibles:
 ## 🔁 OpenClaw Sync automático
 
 ClawDesk detecta y configura automáticamente:
+
 - Binario `openclaw` (o `clawdbot`, `moltbot`).
 - Gateway `127.0.0.1:18789` (o el puerto que uses).
 - Token desde `~/.config/openclaw/gateway.auth.token` o `OPENCLAW_GATEWAY_TOKEN`.
