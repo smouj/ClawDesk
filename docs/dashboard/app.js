@@ -613,6 +613,8 @@ rotateSecretButton?.addEventListener("click", async () => {
 const launchDashboard = document.getElementById("launch-dashboard");
 launchDashboard?.addEventListener("click", () => setActiveView("dashboard"));
 
+document.getElementById("gateway-dashboard")?.addEventListener("click", () => setActiveView("dashboard"));
+
 document.getElementById("tailscale-guide")?.addEventListener("click", () => {
   window.open("https://tailscale.com/", "_blank", "noopener,noreferrer");
 });

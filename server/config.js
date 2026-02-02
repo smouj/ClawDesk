@@ -19,12 +19,21 @@ const DEFAULT_CONFIG = {
   },
   gateway: {
     url: "http://127.0.0.1:18789",
-    token_path: path.join(HOME_DIR, ".config", "openclaw", "gateway.auth.token")
+    bind: "127.0.0.1",
+    port: 18789,
+    token_path: path.join(HOME_DIR, ".config", "openclaw", "gateway.auth.token"),
+    auth: {
+      token: ""
+    }
   },
   security: {
     allow_actions: [
       "gateway.status",
       "gateway.logs",
+      "gateway.probe",
+      "gateway.start",
+      "gateway.stop",
+      "gateway.restart",
       "agent.list",
       "agent.start",
       "agent.stop",
@@ -32,7 +41,8 @@ const DEFAULT_CONFIG = {
       "skills.list",
       "skills.enable",
       "skills.disable",
-      "support.bundle"
+      "support.bundle",
+      "secret.rotate"
     ]
   },
   observability: {
@@ -62,6 +72,16 @@ const loadConfig = () => {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) {
     throw new Error("El puerto configurado debe estar entre 1024 y 65535.");
   }
+  const gatewayBind = config.gateway?.bind || DEFAULT_CONFIG.gateway.bind;
+  if (gatewayBind !== "127.0.0.1" && gatewayBind !== "localhost" && gatewayBind !== "::1") {
+    throw new Error("El gateway debe enlazarse a loopback por seguridad.");
+  }
+  const gatewayPort = Number(config.gateway?.port || DEFAULT_CONFIG.gateway.port);
+  if (!Number.isInteger(gatewayPort) || gatewayPort < 1024 || gatewayPort > 65535) {
+    throw new Error("El puerto del gateway debe estar entre 1024 y 65535.");
+  }
+  const gatewayUrl = config.gateway?.url || `http://${gatewayBind}:${gatewayPort}`;
+
   return {
     ...DEFAULT_CONFIG,
     ...config,
@@ -73,7 +93,14 @@ const loadConfig = () => {
     },
     gateway: {
       ...DEFAULT_CONFIG.gateway,
-      ...(config.gateway || {})
+      ...(config.gateway || {}),
+      bind: gatewayBind,
+      port: gatewayPort,
+      url: gatewayUrl,
+      auth: {
+        ...DEFAULT_CONFIG.gateway.auth,
+        ...(config.gateway?.auth || {})
+      }
     },
     security: {
       ...DEFAULT_CONFIG.security,
@@ -94,6 +121,13 @@ const ensureSecret = () => {
     return secret;
   }
   return fs.readFileSync(SECRET_PATH, "utf-8").trim();
+};
+
+const rotateSecret = () => {
+  ensureDirectory(CONFIG_DIR);
+  const secret = crypto.randomBytes(32).toString("hex");
+  fs.writeFileSync(SECRET_PATH, secret, { mode: 0o600 });
+  return secret;
 };
 
 const readGatewayToken = (tokenPath) => {
@@ -117,6 +151,51 @@ const redactText = (text, secrets = []) => {
   return output;
 };
 
+const resolveGatewayConfig = ({ config, env = process.env, flags = {} } = {}) => {
+  const resolvedConfig = config || loadConfig();
+  const portFromFlags = flags.port ? Number(flags.port) : null;
+  const envPort = env.OPENCLAW_GATEWAY_PORT ? Number(env.OPENCLAW_GATEWAY_PORT) : null;
+  const port = Number.isInteger(portFromFlags)
+    ? portFromFlags
+    : Number.isInteger(envPort)
+      ? envPort
+      : Number(resolvedConfig.gateway?.port || 18789);
+  const portSource = Number.isInteger(portFromFlags)
+    ? "flag"
+    : Number.isInteger(envPort)
+      ? "env"
+      : resolvedConfig.gateway?.port
+        ? "config"
+        : "default";
+
+  const token =
+    flags.token ||
+    env.OPENCLAW_GATEWAY_TOKEN ||
+    resolvedConfig.gateway?.auth?.token ||
+    readGatewayToken(resolvedConfig.gateway?.token_path);
+  const tokenSource = flags.token
+    ? "flag"
+    : env.OPENCLAW_GATEWAY_TOKEN
+      ? "env"
+      : resolvedConfig.gateway?.auth?.token
+        ? "config"
+        : readGatewayToken(resolvedConfig.gateway?.token_path)
+          ? "file"
+          : "missing";
+
+  const bind = resolvedConfig.gateway?.bind || "127.0.0.1";
+  const url = `http://${bind}:${port}`;
+
+  return {
+    port,
+    portSource,
+    token,
+    tokenSource,
+    bind,
+    url
+  };
+};
+
 module.exports = {
   CONFIG_DIR,
   CONFIG_PATH,
@@ -126,6 +205,8 @@ module.exports = {
   DEFAULT_CONFIG,
   loadConfig,
   ensureSecret,
+  rotateSecret,
   readGatewayToken,
-  redactText
+  redactText,
+  resolveGatewayConfig
 };

@@ -1,13 +1,48 @@
+const fs = require("fs");
+const path = require("path");
 const { execFile } = require("child_process");
 
-const runOpenClaw = (args, { env = {}, timeout = 15000 } = {}) =>
+const BIN_CANDIDATES = ["openclaw", "clawdbot", "moltbot"];
+let cachedBinary = null;
+
+const findExecutable = (binary) => {
+  const pathEntries = (process.env.PATH || "").split(path.delimiter);
+  for (const entry of pathEntries) {
+    const fullPath = path.join(entry, binary);
+    try {
+      fs.accessSync(fullPath, fs.constants.X_OK);
+      return fullPath;
+    } catch (error) {
+      continue;
+    }
+  }
+  return null;
+};
+
+const resolveOpenClawBinary = () => {
+  if (cachedBinary) {
+    return cachedBinary;
+  }
+  for (const candidate of BIN_CANDIDATES) {
+    const resolvedPath = findExecutable(candidate);
+    if (resolvedPath) {
+      cachedBinary = { binary: candidate, path: resolvedPath };
+      return cachedBinary;
+    }
+  }
+  cachedBinary = { binary: "openclaw", path: "openclaw" };
+  return cachedBinary;
+};
+
+const runOpenClaw = (args, { env = {}, timeout = 15000, maxBuffer = 512 * 1024, binary } = {}) =>
   new Promise((resolve, reject) => {
+    const resolved = binary ? { binary } : resolveOpenClawBinary();
     execFile(
-      "openclaw",
+      resolved.binary,
       args,
       {
         timeout,
-        maxBuffer: 1024 * 1024,
+        maxBuffer,
         env: {
           ...process.env,
           ...env
@@ -21,7 +56,7 @@ const runOpenClaw = (args, { env = {}, timeout = 15000 } = {}) =>
           err.stderr = stderr;
           return reject(err);
         }
-        resolve({ stdout, stderr });
+        resolve({ stdout, stderr, binary: resolved.binary });
       }
     );
   });
@@ -42,4 +77,4 @@ const parseListOutput = (raw) => {
   }
 };
 
-module.exports = { runOpenClaw, parseListOutput };
+module.exports = { runOpenClaw, parseListOutput, resolveOpenClawBinary };

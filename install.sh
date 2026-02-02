@@ -26,6 +26,9 @@ require_cmd() {
 print_step "Detectando sistema operativo"
 OS_NAME="$(uname -s)"
 IS_WSL=0
+if [ "${CLAWDESK_WSL:-0}" = "1" ]; then
+  IS_WSL=1
+fi
 if grep -qi microsoft /proc/version 2>/dev/null; then
   IS_WSL=1
 fi
@@ -107,8 +110,20 @@ finally:
     sock.close()
 PY
 
-read -r -p "URL del gateway (default http://127.0.0.1:18789): " GATEWAY_URL_INPUT
-GATEWAY_URL="${GATEWAY_URL_INPUT:-http://127.0.0.1:18789}"
+read -r -p "Bind del gateway (default 127.0.0.1): " GATEWAY_BIND_INPUT
+GATEWAY_BIND="${GATEWAY_BIND_INPUT:-127.0.0.1}"
+if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
+  echo "El gateway debe enlazarse a loopback por seguridad." >&2
+  exit 1
+fi
+
+read -r -p "Puerto del gateway (default 18789): " GATEWAY_PORT_INPUT
+GATEWAY_PORT="${GATEWAY_PORT_INPUT:-18789}"
+if [ "$GATEWAY_PORT" -lt 1024 ] || [ "$GATEWAY_PORT" -gt 65535 ]; then
+  echo "El puerto del gateway debe estar entre 1024 y 65535." >&2
+  exit 1
+fi
+GATEWAY_URL="http://${GATEWAY_BIND}:${GATEWAY_PORT}"
 
 read -r -p "Ruta de gateway.auth.token (default ~/.config/openclaw/gateway.auth.token): " TOKEN_PATH_INPUT
 TOKEN_PATH="${TOKEN_PATH_INPUT:-$HOME/.config/openclaw/gateway.auth.token}"
@@ -123,12 +138,21 @@ cat > "$CONFIG_FILE" <<CONFIG
   },
   "gateway": {
     "url": "$GATEWAY_URL",
-    "token_path": "$TOKEN_PATH"
+    "bind": "$GATEWAY_BIND",
+    "port": $GATEWAY_PORT,
+    "token_path": "$TOKEN_PATH",
+    "auth": {
+      "token": ""
+    }
   },
   "security": {
     "allow_actions": [
       "gateway.status",
       "gateway.logs",
+      "gateway.probe",
+      "gateway.start",
+      "gateway.stop",
+      "gateway.restart",
       "agent.list",
       "agent.start",
       "agent.stop",
@@ -136,7 +160,8 @@ cat > "$CONFIG_FILE" <<CONFIG
       "skills.list",
       "skills.enable",
       "skills.disable",
-      "support.bundle"
+      "support.bundle",
+      "secret.rotate"
     ]
   },
   "observability": {
@@ -186,6 +211,8 @@ print(config["app"]["host"])
 print(config["app"]["port"])
 print(config["gateway"]["token_path"])
 print(config["gateway"]["url"])
+print(config["gateway"].get("bind", "127.0.0.1"))
+print(config["gateway"].get("port", 18789))
 PY
 }
 
@@ -218,7 +245,7 @@ is_running() {
 case "${1:-run}" in
   run)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
     if is_running; then
       echo "ClawDesk ya está en ejecución (PID $(cat "$PID_FILE"))."
       exit 0
@@ -229,7 +256,7 @@ case "${1:-run}" in
     ;;
   status)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
     if is_running; then
       echo "✅ Daemon activo (PID $(cat "$PID_FILE"))."
       SECRET=$(read_secret)
@@ -260,7 +287,7 @@ PY
     ;;
   open)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
     echo "Abre en tu navegador: http://${HOST}:${PORT}"
     ;;
   config)
@@ -269,13 +296,23 @@ PY
     ;;
   doctor)
     require_config
-    read -r HOST PORT TOKEN_PATH GATEWAY_URL < <(read_config)
+    read -r HOST PORT TOKEN_PATH GATEWAY_URL GATEWAY_BIND GATEWAY_PORT < <(read_config)
     echo "✅ Host: ${HOST}"
     echo "✅ Port: ${PORT}"
     if command -v openclaw >/dev/null 2>&1; then
-      echo "✅ openclaw detectado"
+      BIN="openclaw"
+    elif command -v clawdbot >/dev/null 2>&1; then
+      BIN="clawdbot"
+    elif command -v moltbot >/dev/null 2>&1; then
+      BIN="moltbot"
     else
-      echo "⚠️ openclaw no está en PATH"
+      BIN=""
+    fi
+    if [ -n "$BIN" ]; then
+      VERSION=$("$BIN" --version 2>/dev/null || true)
+      echo "✅ ${BIN} detectado ${VERSION}"
+    else
+      echo "⚠️ openclaw/clawdbot/moltbot no está en PATH"
       echo "   Instala OpenClaw para habilitar acciones reales."
     fi
     if [ -f "$TOKEN_PATH" ]; then
@@ -295,7 +332,25 @@ except OSError:
 finally:
     sock.close()
 PY
+    echo "Gateway Bind: ${GATEWAY_BIND}"
+    echo "Gateway Port: ${GATEWAY_PORT}"
     echo "Gateway URL: ${GATEWAY_URL}"
+    ;;
+  secret)
+    require_config
+    if [ "${2:-}" != "rotate" ]; then
+      echo "Uso: clawdesk secret rotate"
+      exit 1
+    fi
+    python3 - <<PY
+import secrets
+from pathlib import Path
+secret = secrets.token_hex(32)
+path = Path("$SECRET_FILE")
+path.write_text(secret)
+path.chmod(0o600)
+PY
+    echo "Secret rotado. Reinicia el daemon y recarga el dashboard."
     ;;
   uninstall)
     echo "Esto eliminará ${INSTALL_DIR} y ${CONFIG_DIR}. Continuar? (y/N)"
@@ -313,7 +368,7 @@ PY
     echo "Desinstalación completa."
     ;;
   *)
-    echo "Uso: clawdesk [run|status|stop|open|config|doctor|uninstall]"
+    echo "Uso: clawdesk [run|status|stop|open|config|doctor|secret rotate|uninstall]"
     exit 1
     ;;
 esac
