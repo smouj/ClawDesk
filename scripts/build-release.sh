@@ -15,7 +15,7 @@ rm -f "$ARCHIVE" "$SHA_FILE"
 rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR"
 
-cp -R app server scripts config install.sh README.md LICENSE CHANGELOG.md package.json "$STAGE_DIR/"
+cp -R app server scripts config install.sh README.md LICENSE CHANGELOG.md MIGRATION.md RELEASE_NOTES.md package.json "$STAGE_DIR/"
 
 tar -czf "$ARCHIVE" "$STAGE_DIR"
 

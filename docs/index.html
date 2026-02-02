@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawDesk OS · Retro-OS 2000 minimal</title>
+    <title>ClawDesk OS · Retro-OS 2000 production-ready</title>
     <link rel="icon" href="assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -22,7 +22,7 @@
 
       <nav class="tabstrip">
         <a href="#install">Instalar</a>
-        <a href="#features">Novedades v1.3.0</a>
+        <a href="#features">Novedades v2.0.0</a>
         <a href="#security">Seguridad</a>
         <a href="dashboard/">Dashboard demo</a>
       </nav>
@@ -34,12 +34,21 @@
             <p class="muted">
               Esta landing no llama a localhost. Para el panel real ejecuta en tu host local:
             </p>
-            <div class="code">curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash</div>
+            <div class="code">
+              curl -fsSL
+              https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash
+            </div>
+            <p class="muted">Stable usa el latest release automáticamente.</p>
           </div>
           <div class="card">
             <h2>Safe install</h2>
-            <p class="muted">Usa releases oficiales + checksums verificados.</p>
-            <a class="btn" href="https://github.com/smouj/ClawDesk/releases" target="_blank" rel="noreferrer">
+            <p class="muted">Usa releases oficiales + checksums verificados. Nightly sigue main.</p>
+            <a
+              class="btn"
+              href="https://github.com/smouj/ClawDesk/releases"
+              target="_blank"
+              rel="noreferrer"
+            >
               Ver releases
             </a>
           </div>
@@ -49,24 +58,24 @@
       <section class="section" id="features">
         <div class="grid-2">
           <div class="card">
-            <h2>v1.3.0 · Multi-Gateway Profiles</h2>
-            <p class="muted">Profiles locales + remotos con opt-in seguro y allowlist.</p>
-            <div class="lcd">local + remote (opt-in)</div>
+            <h2>v2.0.0 · CI sólido + Smoke real</h2>
+            <p class="muted">Lint + format + tests + smoke con healthcheck y puertos dinámicos.</p>
+            <div class="lcd">ci green</div>
           </div>
           <div class="card">
-            <h2>Automation / Macros</h2>
-            <p class="muted">Workflows seguros con allow_actions y timeouts por paso.</p>
-            <div class="lcd">runner seguro</div>
+            <h2>Retro-OS polish</h2>
+            <p class="muted">Tokens unificados, contraste AA y navegación por teclado.</p>
+            <div class="lcd">accessibility ++</div>
           </div>
           <div class="card">
-            <h2>Usage Center</h2>
-            <p class="muted">Tokens/costes por proveedor/modelo/herramienta (OpenClaw).</p>
-            <div class="lcd">usage real</div>
+            <h2>Logs más seguros</h2>
+            <p class="muted">Redacción extra para bearer tokens y api keys.</p>
+            <div class="lcd">redaction+</div>
           </div>
           <div class="card">
-            <h2>Timeline / Audit Log</h2>
-            <p class="muted">Eventos de acciones, cambios de perfil y errores.</p>
-            <div class="lcd">events.jsonl</div>
+            <h2>Release assets automáticos</h2>
+            <p class="muted">Tarball + SHA256SUMS listos al tag v*.</p>
+            <div class="lcd">release.yml</div>
           </div>
         </div>
       </section>
@@ -88,7 +97,7 @@
         </div>
       </section>
 
-      <footer>ClawDesk OS · v1.3.0 · Retro minimal UI.</footer>
+      <footer>ClawDesk OS · v2.0.0 · Retro-OS production-ready.</footer>
     </div>
   </body>
 </html>

@@ -3,7 +3,7 @@ import { setLcd, pulseVu } from "./components.js";
 const setTable = (table, headers, rows) => {
   if (!table) return;
   if (!rows.length) {
-    table.innerHTML = "<tr><td class=\"muted\">Sin datos</td></tr>";
+    table.innerHTML = '<tr><td class="muted">Sin datos</td></tr>';
     return;
   }
   table.innerHTML = `
@@ -38,7 +38,9 @@ export const renderDashboard = (state) => {
     const statusText = (state.gateway.status || "").trim();
     const lowered = statusText.toLowerCase();
     const online = ["online", "running", "up", "active"].some((flag) => lowered.includes(flag));
-    const offline = ["offline", "stopped", "down", "inactive", "error"].some((flag) => lowered.includes(flag));
+    const offline = ["offline", "stopped", "down", "inactive", "error"].some((flag) =>
+      lowered.includes(flag)
+    );
     if (gatewayState) {
       gatewayState.textContent = online ? "online" : offline ? "offline" : "unknown";
       gatewayState.className = `badge ${online ? "ok" : offline ? "crit" : "warn"}`;
@@ -156,7 +158,12 @@ export const renderUsage = (state) => {
   setTable(
     document.getElementById("usage-providers"),
     ["Provider", "Tokens", "Cost", "Reqs"],
-    byProvider.map((item) => [item.name, item.tokens ?? "n/a", item.cost ?? "n/a", item.requests ?? "n/a"])
+    byProvider.map((item) => [
+      item.name,
+      item.tokens ?? "n/a",
+      item.cost ?? "n/a",
+      item.requests ?? "n/a",
+    ])
   );
   setTable(
     document.getElementById("usage-models"),

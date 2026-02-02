@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const http = require("http");
+const net = require("net");
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "clawdesk-smoke-"));
 const configPath = path.join(tempDir, "config.json");
@@ -17,9 +18,55 @@ process.env.CLAWDESK_USAGE_PATH = path.join(tempDir, "usage.jsonl");
 
 const { createServer } = require("./server");
 
-const config = {
+const getAvailablePort = () =>
+  new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, "127.0.0.1");
+    server.on("listening", () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+    server.on("error", reject);
+  });
+
+const waitForHealth = ({ host, port, secret, timeoutMs = 10_000, intervalMs = 300 }) =>
+  new Promise((resolve, reject) => {
+    const started = Date.now();
+    const check = () => {
+      const req = http.request(
+        {
+          hostname: host,
+          port,
+          path: "/api/health",
+          method: "GET",
+          headers: { Authorization: `Bearer ${secret}` },
+        },
+        (res) => {
+          if (res.statusCode === 200) {
+            res.resume();
+            return resolve();
+          }
+          res.resume();
+          if (Date.now() - started > timeoutMs) {
+            return reject(new Error(`Health check failed: ${res.statusCode}`));
+          }
+          return setTimeout(check, intervalMs);
+        }
+      );
+      req.on("error", (error) => {
+        if (Date.now() - started > timeoutMs) {
+          return reject(error);
+        }
+        return setTimeout(check, intervalMs);
+      });
+      req.end();
+    };
+    check();
+  });
+
+const createConfig = (port) => ({
   configVersion: 3,
-  app: { host: "127.0.0.1", port: 5180 },
+  app: { host: "127.0.0.1", port },
   profiles: {
     local: {
       name: "local",
@@ -36,35 +83,27 @@ const config = {
     allowedRemoteHosts: [],
   },
   observability: { log_poll_ms: 1500, backoff_max_ms: 8000 },
-};
-fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-fs.writeFileSync(secretPath, "smoke-secret");
-
-const { app } = createServer();
-const server = app.listen(config.app.port, config.app.host, () => {
-  const options = {
-    hostname: config.app.host,
-    port: config.app.port,
-    path: "/api/health",
-    method: "GET",
-    headers: { Authorization: "Bearer smoke-secret" },
-  };
-  const req = http.request(options, (res) => {
-    if (res.statusCode !== 200) {
-      console.error(`Smoke test failed: ${res.statusCode}`);
-      process.exit(1);
-    }
-    res.on("data", () => {});
-    res.on("end", () => {
-      server.close(() => {
-        fs.rmSync(tempDir, { recursive: true, force: true });
-        console.log("Smoke test OK");
-      });
-    });
-  });
-  req.on("error", (error) => {
-    console.error(error.message);
-    process.exit(1);
-  });
-  req.end();
 });
+
+const runSmoke = async () => {
+  const port = await getAvailablePort();
+  const config = createConfig(port);
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  fs.writeFileSync(secretPath, "smoke-secret");
+
+  const { app } = createServer();
+  const server = app.listen(config.app.port, config.app.host);
+  try {
+    await waitForHealth({ host: config.app.host, port, secret: "smoke-secret" });
+    console.log("Smoke test OK");
+  } catch (error) {
+    console.error(`Smoke test failed: ${error.message}`);
+    process.exitCode = 1;
+  } finally {
+    server.close(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    });
+  }
+};
+
+runSmoke();

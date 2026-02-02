@@ -34,4 +34,11 @@ describe("redactText", () => {
     expect(output).toContain("secret:[redacted]");
     expect(output).toContain("password:[redacted]");
   });
+
+  it("redacts bearer tokens and api keys", () => {
+    const input = "Authorization: Bearer super-secret-token api_key=xyz";
+    const output = redactText(input, []).toLowerCase();
+    expect(output).toContain("authorization:[redacted]");
+    expect(output).toContain("api_key:[redacted]");
+  });
 });

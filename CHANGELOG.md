@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.0.0] - 2024-10-01
+
+### Added
+
+- Release automation con lint/format/tests/smoke y assets firmados (SHA256SUMS).
+- Instalador stable auto-detecta latest release para evitar 404s.
+- CORS allowlist loopback-only y redacción extendida para bearer/api keys.
+- Smoke test con healthcheck y puerto dinámico.
+
+### Changed
+
+- UI Retro-OS refinada: tokens unificados, focus visible y toasts en cola.
+- Config default + ejemplo incluyen `allowedOrigins`.
+
+### Fixed
+
+- ESLint env por carpeta y Prettier ignore/config consistente.
+
 ## [1.3.0] - 2024-09-20
 
 ### Added

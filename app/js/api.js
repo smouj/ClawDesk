@@ -22,8 +22,10 @@ const request = async (path, options = {}) => {
 export const api = {
   getConfig: () => request("/config"),
   getProfiles: () => request("/profiles"),
-  activateProfile: (name) => request("/profiles/activate", { method: "POST", body: JSON.stringify({ name }) }),
-  saveProfile: (payload) => request("/profiles/save", { method: "POST", body: JSON.stringify(payload) }),
+  activateProfile: (name) =>
+    request("/profiles/activate", { method: "POST", body: JSON.stringify({ name }) }),
+  saveProfile: (payload) =>
+    request("/profiles/save", { method: "POST", body: JSON.stringify(payload) }),
   deleteProfile: (name) => request(`/profiles/${name}`, { method: "DELETE" }),
   getGatewayStatus: () => request("/gateway/status"),
   getGatewayControlUrl: () => request("/gateway/control-url"),

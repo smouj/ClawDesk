@@ -1,5 +1,7 @@
 const secretPatterns = [
-  /(token|secret|password)\s*[:=]\s*[^\s]+/gi,
+  /(token|secret|password|api_key|apikey)\s*[:=]\s*[^\s]+/gi,
+  /authorization\s*:\s*bearer\s+[^\s]+/gi,
+  /bearer\s+[A-Za-z0-9._-]{12,}/gi,
   /sk-[A-Za-z0-9]{10,}/g,
 ];
 

@@ -37,7 +37,8 @@
       "events.read"
     ],
     "enableRemoteProfiles": false,
-    "allowedRemoteHosts": []
+    "allowedRemoteHosts": [],
+    "allowedOrigins": []
   },
   "macros": {
     "pulse": {

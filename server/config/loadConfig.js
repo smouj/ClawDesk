@@ -63,6 +63,7 @@ const DEFAULT_CONFIG = {
     ],
     enableRemoteProfiles: false,
     allowedRemoteHosts: [],
+    allowedOrigins: [],
   },
   macros: {},
   observability: {

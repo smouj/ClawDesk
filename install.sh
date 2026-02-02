@@ -154,21 +154,24 @@ PY
 
   cat > "$CONFIG_FILE" <<CONFIG
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "app": {
     "host": "127.0.0.1",
     "port": $PORT,
     "theme": "dark"
   },
-  "gateway": {
-    "url": "$GATEWAY_URL",
-    "bind": "$GATEWAY_BIND",
-    "port": $GATEWAY_PORT,
-    "token_path": "$TOKEN_PATH",
-    "auth": {
-      "token": ""
+  "profiles": {
+    "local": {
+      "name": "local",
+      "bind": "$GATEWAY_BIND",
+      "port": $GATEWAY_PORT,
+      "token_path": "$TOKEN_PATH",
+      "auth": {
+        "token": ""
+      }
     }
   },
+  "activeProfile": "local",
   "security": {
     "allow_actions": [
       "gateway.status",
@@ -188,7 +191,12 @@ PY
       "support.bundle",
       "secret.rotate"
     ]
+    ,
+    "enableRemoteProfiles": false,
+    "allowedRemoteHosts": [],
+    "allowedOrigins": []
   },
+  "macros": {},
   "observability": {
     "log_poll_ms": 1500,
     "backoff_max_ms": 8000
@@ -233,13 +241,25 @@ read_config() {
 import json
 from pathlib import Path
 config = json.loads(Path("$CONFIG_FILE").read_text())
-print(config["app"]["host"])
-print(config["app"]["port"])
-print(config["gateway"]["token_path"])
-print(config["gateway"]["url"])
-print(config["gateway"].get("bind", "127.0.0.1"))
-print(config["gateway"].get("port", 18789))
-print(config.get("gateway", {}).get("auth", {}).get("token", ""))
+host = config["app"]["host"]
+port = config["app"]["port"]
+profile = None
+if "profiles" in config:
+    profile = config["profiles"].get(config.get("activeProfile", "local"))
+if not profile and "gateway" in config:
+    profile = config.get("gateway")
+token_path = profile.get("token_path") if profile else ""
+bind = profile.get("bind", "127.0.0.1") if profile else "127.0.0.1"
+gateway_port = profile.get("port", 18789) if profile else 18789
+gateway_url = f"http://{bind}:{gateway_port}"
+token = profile.get("auth", {}).get("token", "") if profile else ""
+print(host)
+print(port)
+print(token_path)
+print(gateway_url)
+print(bind)
+print(gateway_port)
+print(token)
 PY
 }
 

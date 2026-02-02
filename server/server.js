@@ -9,6 +9,7 @@ const { detectBinary } = require("./openclaw/detectBinary");
 const { runOpenClaw } = require("./openclaw/run");
 const { rateLimit } = require("./security/rateLimit");
 const { hostAllowlist } = require("./security/hostAllowlist");
+const { createCorsAllowlist } = require("./security/cors");
 const { createAuth } = require("./security/auth");
 const { redactText } = require("./security/redaction");
 const { createEventLogger } = require("./events/log");
@@ -43,11 +44,7 @@ const createServer = () => {
     return env;
   };
 
-  const getSecrets = (profile) => [
-    profile?.token,
-    secret,
-    process.env.OPENCLAW_GATEWAY_TOKEN,
-  ];
+  const getSecrets = (profile) => [profile?.token, secret, process.env.OPENCLAW_GATEWAY_TOKEN];
 
   const logEvent = createEventLogger({ filePath: EVENTS_PATH, secrets: getSecrets(getProfile()) });
 
@@ -77,6 +74,7 @@ const createServer = () => {
     next();
   });
   app.use(hostAllowlist);
+  app.use(createCorsAllowlist(config));
 
   const serveIndex = (req, res) => {
     const htmlPath = path.join(appRoot, "index.html");
@@ -174,7 +172,8 @@ const createServer = () => {
   app.use("/api", apiRouter);
 
   app.use((err, req, res, next) => {
-    fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${err.message}\n`);
+    const redacted = redactText(err.message, getSecrets(getProfile()));
+    fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${redacted}\n`);
     res.status(500).json({ error: "Error interno" });
     next();
   });
