@@ -87,7 +87,8 @@ const createProfilesRouter = ({ requireAction, logEvent }) => {
     if (!config.profiles?.[name]) {
       return res.status(404).json({ error: "Perfil no encontrado" });
     }
-    const { [name]: removed, ...rest } = config.profiles;
+    const rest = { ...config.profiles };
+    delete rest[name];
     const activeProfile = config.activeProfile === name ? "local" : config.activeProfile;
     const updated = { ...config, profiles: rest, activeProfile };
     writeJson(CONFIG_PATH, updated);
