@@ -47,6 +47,18 @@
   border-bottom: 1px solid var(--line);
 }
 
+.table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .inline {
   display: flex;
   align-items: center;

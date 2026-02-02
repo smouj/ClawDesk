@@ -38,8 +38,11 @@ export const api = {
   getOpenclawVersion: () => request("/openclaw/version"),
 };
 
-export const streamLogs = (onEvent) => {
-  const source = new EventSource(`/api/logs/stream?token=${token}`);
+export const streamLogs = (onEvent, options = {}) => {
+  const params = new URLSearchParams({ token });
+  if (options.interval) params.set("interval", options.interval);
+  if (options.tail) params.set("tail", options.tail);
+  const source = new EventSource(`/api/logs/stream?${params.toString()}`);
   source.addEventListener("logs", (event) => {
     onEvent("logs", JSON.parse(event.data));
   });

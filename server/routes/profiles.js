@@ -53,7 +53,19 @@ const createProfilesRouter = ({ requireAction, logEvent }) => {
     if (!bind) {
       return res.status(400).json({ error: "Bind inválido" });
     }
+    if (bind === "0.0.0.0") {
+      return res.status(400).json({ error: "Bind inseguro: usa loopback o túneles cifrados." });
+    }
     const config = loadConfig();
+    if (!isLoopbackHost(bind) && !config.security?.enableRemoteProfiles) {
+      return res.status(403).json({ error: "Remote profiles deshabilitados por policy." });
+    }
+    if (!isLoopbackHost(bind)) {
+      const allowedHosts = config.security?.allowedRemoteHosts || [];
+      if (allowedHosts.length && !allowedHosts.includes(bind)) {
+        return res.status(400).json({ error: "Host remoto no permitido por allowlist." });
+      }
+    }
     const profile = {
       name,
       bind,

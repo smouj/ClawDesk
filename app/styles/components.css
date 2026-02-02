@@ -56,6 +56,7 @@
   padding: 8px 14px;
   border-radius: 999px;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
 .tabstrip button.active {
@@ -70,6 +71,11 @@
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.card-active {
+  border-color: rgba(52, 242, 255, 0.5);
+  box-shadow: 0 12px 36px rgba(52, 242, 255, 0.15);
 }
 
 .card h3 {
@@ -134,6 +140,19 @@
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(52, 242, 255, 0.2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn.secondary {
@@ -167,6 +186,16 @@
   transform: translateY(0);
 }
 
+.toast.ok {
+  border-color: rgba(107, 255, 122, 0.6);
+  color: var(--lime);
+}
+
+.toast.warn {
+  border-color: rgba(255, 176, 32, 0.6);
+  color: var(--amber);
+}
+
 .terminal {
   background: rgba(5, 8, 15, 0.95);
   border-radius: 12px;
@@ -177,6 +206,7 @@
   font-size: 0.85rem;
   color: var(--muted);
   overflow: auto;
+  white-space: pre-wrap;
 }
 
 .titlebar .status {
@@ -191,6 +221,74 @@
   color: var(--text);
   padding: 6px 12px;
   border-radius: 10px;
+}
+
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(234, 240, 255, 0.4);
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.7);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.2s ease;
+  z-index: 20;
+}
+
+.modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-card {
+  width: min(560px, 92vw);
+  background: rgba(10, 12, 20, 0.95);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 12px;
+}
+
+.modal-body {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.modal-body ol {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
 }
 
 .knob {
