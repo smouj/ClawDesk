@@ -61,7 +61,11 @@ const parseUsageText = (raw) => {
       }
       const providerMatch = line.match(/provider\s*[:=]\s*([^,]+),?\s*tokens?\s*[:=]\s*(\d+)/i);
       if (providerMatch) {
-        byProvider.push({ name: providerMatch[1].trim(), tokens: Number(providerMatch[2]), cost: null });
+        byProvider.push({
+          name: providerMatch[1].trim(),
+          tokens: Number(providerMatch[2]),
+          cost: null,
+        });
       }
       const modelMatch = line.match(/model\s*[:=]\s*([^,]+),?\s*tokens?\s*[:=]\s*(\d+)/i);
       if (modelMatch) {
@@ -69,7 +73,12 @@ const parseUsageText = (raw) => {
       }
       const toolMatch = line.match(/tool\s*[:=]\s*([^,]+),?\s*usage\s*[:=]\s*(\d+)/i);
       if (toolMatch) {
-        byTool.push({ name: toolMatch[1].trim(), usage: Number(toolMatch[2]), cost: null, provider: null });
+        byTool.push({
+          name: toolMatch[1].trim(),
+          usage: Number(toolMatch[2]),
+          cost: null,
+          provider: null,
+        });
       }
     });
 

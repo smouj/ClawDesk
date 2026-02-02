@@ -45,13 +45,70 @@
       </header>
 
       <nav class="tabstrip" role="tablist">
-        <button class="active" data-page="dashboard">Dashboard</button>
-        <button data-page="profiles">Profiles</button>
-        <button data-page="macros">Macros</button>
-        <button data-page="usage">Usage Center</button>
-        <button data-page="timeline">Timeline</button>
-        <button data-page="logs">Logs</button>
-        <button data-page="settings">Settings</button>
+        <button
+          class="active"
+          data-page="dashboard"
+          role="tab"
+          aria-selected="true"
+          aria-controls="page-dashboard"
+          tabindex="0"
+        >
+          Dashboard
+        </button>
+        <button
+          data-page="profiles"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-profiles"
+          tabindex="-1"
+        >
+          Profiles
+        </button>
+        <button
+          data-page="macros"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-macros"
+          tabindex="-1"
+        >
+          Macros
+        </button>
+        <button
+          data-page="usage"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-usage"
+          tabindex="-1"
+        >
+          Usage Center
+        </button>
+        <button
+          data-page="timeline"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-timeline"
+          tabindex="-1"
+        >
+          Timeline
+        </button>
+        <button
+          data-page="logs"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-logs"
+          tabindex="-1"
+        >
+          Logs
+        </button>
+        <button
+          data-page="settings"
+          role="tab"
+          aria-selected="false"
+          aria-controls="page-settings"
+          tabindex="-1"
+        >
+          Settings
+        </button>
       </nav>
 
       <section class="page active" id="page-dashboard">
@@ -61,8 +118,16 @@
             <span class="badge" id="gateway-state">offline</span>
           </div>
           <div class="inline">
-            <button class="btn" id="refresh-dashboard">Sync</button>
-            <button class="btn secondary" id="open-control-ui">Open Control UI</button>
+            <button
+              class="btn"
+              id="refresh-dashboard"
+              aria-label="Sincronizar estado del dashboard"
+            >
+              Sync
+            </button>
+            <button class="btn secondary" id="open-control-ui" aria-label="Abrir panel del gateway">
+              Open Control UI
+            </button>
           </div>
         </div>
         <div class="stats-grid">
@@ -96,8 +161,16 @@
             </div>
             <p class="muted">Acceso remoto solo vía túneles cifrados (Tailscale/WireGuard/SSH).</p>
             <div class="inline">
-              <button class="btn secondary" id="tailscale-guide">Guía Tailscale</button>
-              <button class="btn secondary" id="ssh-guide">Guía SSH</button>
+              <button
+                class="btn secondary"
+                id="tailscale-guide"
+                aria-label="Abrir guía de Tailscale"
+              >
+                Guía Tailscale
+              </button>
+              <button class="btn secondary" id="ssh-guide" aria-label="Abrir guía de SSH Tunneling">
+                Guía SSH
+              </button>
             </div>
           </article>
           <article class="card">
@@ -146,7 +219,13 @@
           <div class="dashboard-panel">
             <div class="section-header">
               <h3>Active Agents</h3>
-              <button class="btn secondary" id="view-agents">Open Control UI</button>
+              <button
+                class="btn secondary"
+                id="view-agents"
+                aria-label="Ver agentes en el Control UI"
+              >
+                Open Control UI
+              </button>
             </div>
             <div class="agent-grid">
               <div class="empty-state">
@@ -158,7 +237,9 @@
           <div class="dashboard-panel">
             <div class="section-header">
               <h3>Recent Events</h3>
-              <button class="btn ghost" id="view-events">Ver todo</button>
+              <button class="btn ghost" id="view-events" aria-label="Ver todos los eventos">
+                Ver todo
+              </button>
             </div>
             <div class="card" id="recent-events"></div>
           </div>
@@ -171,7 +252,7 @@
             <h2>Multi-Gateway Profiles</h2>
             <p class="muted">Gestiona conexiones locales y remotas con seguridad primero.</p>
           </div>
-          <button class="btn" id="new-profile">Nuevo perfil</button>
+          <button class="btn" id="new-profile" aria-label="Crear nuevo perfil">Nuevo perfil</button>
         </div>
         <div class="grid-2" id="profiles-list"></div>
         <p class="muted" id="profiles-empty">No hay perfiles registrados.</p>
@@ -204,8 +285,12 @@
               <option value="24h">Últimas 24h</option>
               <option value="7d">Últimos 7 días</option>
             </select>
-            <button class="btn secondary" id="export-json">Export JSON</button>
-            <button class="btn secondary" id="export-csv">Export CSV</button>
+            <button class="btn secondary" id="export-json" aria-label="Exportar uso en JSON">
+              Export JSON
+            </button>
+            <button class="btn secondary" id="export-csv" aria-label="Exportar uso en CSV">
+              Export CSV
+            </button>
           </div>
         </div>
         <div class="usage-grid">
@@ -259,7 +344,7 @@
       <section class="page" id="page-timeline">
         <div class="toolbar">
           <h2>Event Timeline</h2>
-          <button class="btn" id="refresh-events">Refresh</button>
+          <button class="btn" id="refresh-events" aria-label="Actualizar eventos">Refresh</button>
         </div>
         <div class="card">
           <div id="timeline-list"></div>
@@ -273,9 +358,18 @@
             <p class="muted">Stream en tiempo real desde gateway y agentes.</p>
           </div>
           <div class="inline">
-            <input type="search" id="log-filter" placeholder="Filtrar..." />
-            <button class="btn secondary" id="toggle-scroll">Pause</button>
-            <button class="btn secondary" id="download-logs">Download</button>
+            <input
+              type="search"
+              id="log-filter"
+              placeholder="Filtrar..."
+              aria-label="Filtrar logs"
+            />
+            <button class="btn secondary" id="toggle-scroll" aria-label="Pausar o reanudar scroll">
+              Pause
+            </button>
+            <button class="btn secondary" id="download-logs" aria-label="Descargar logs">
+              Download
+            </button>
           </div>
         </div>
         <div class="terminal" id="log-stream"></div>
@@ -336,7 +430,12 @@
           </label>
           <label>
             Token (opcional)
-            <input type="password" name="token" placeholder="usa variables de entorno" autocomplete="new-password" />
+            <input
+              type="password"
+              name="token"
+              placeholder="usa variables de entorno"
+              autocomplete="new-password"
+            />
           </label>
           <div class="inline">
             <button class="btn" type="submit">Guardar</button>
@@ -346,7 +445,7 @@
       </div>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script type="module" src="js/app.js"></script>
   </body>
 </html>

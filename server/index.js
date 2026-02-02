@@ -3,6 +3,7 @@ const fs = require("fs");
 
 const { createServer } = require("./server");
 const { PID_PATH, LOG_PATH } = require("./config/loadConfig");
+const { redactText } = require("./security/redaction");
 
 const start = () => {
   const { app, config } = createServer();
@@ -30,8 +31,9 @@ if (require.main === module) {
   try {
     start();
   } catch (error) {
-    fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${error.message}\n`);
-    console.error(error.message);
+    const redacted = redactText(error.message, [process.env.OPENCLAW_GATEWAY_TOKEN]);
+    fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${redacted}\n`);
+    console.error(redacted);
     process.exit(1);
   }
 }

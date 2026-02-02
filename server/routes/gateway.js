@@ -18,7 +18,9 @@ const createGatewayRouter = ({ requireAction, getProfile, createEnv, logEvent })
       logEvent?.("gateway.status", { profile: profile.name });
       res.json({ ...status, profile: profile.name });
     } catch (error) {
-      res.status(503).json({ error: "No se pudo obtener estado del gateway", detail: error.message });
+      res
+        .status(503)
+        .json({ error: "No se pudo obtener estado del gateway", detail: error.message });
     }
   });
 

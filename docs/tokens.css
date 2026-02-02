@@ -31,10 +31,6 @@ body {
   color: var(--text);
 }
 
-a {
-  color: inherit;
-}
-
 :focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;

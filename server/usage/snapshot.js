@@ -1,5 +1,5 @@
-const { runOpenClaw } = require("../openclaw/run");
-const { detectCapabilities } = require("../openclaw/capabilities");
+const { runOpenClaw } = require("../openclaw/run.js");
+const { detectCapabilities } = require("../openclaw/capabilities.js");
 const { parseUsageJson, parseUsageText } = require("./parse");
 const { redactText } = require("../security/redaction");
 
@@ -15,14 +15,21 @@ const getCapabilities = async (profileName, env) => {
   return capabilities;
 };
 
-const getUsageSnapshot = async ({ profile, env, secrets = [], ttlMs = 60_000 }) => {
+const getUsageSnapshot = async ({
+  profile,
+  env,
+  secrets = [],
+  ttlMs = 60_000,
+  capabilities: capabilitiesOverride,
+  runner = runOpenClaw,
+}) => {
   const cacheKey = profile.name;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < ttlMs) {
     return cached.data;
   }
 
-  const capabilities = await getCapabilities(cacheKey, env);
+  const capabilities = capabilitiesOverride || (await getCapabilities(cacheKey, env));
   if (!capabilities.usageFlag) {
     const empty = {
       timestamp: new Date().toISOString(),
@@ -42,7 +49,7 @@ const getUsageSnapshot = async ({ profile, env, secrets = [], ttlMs = 60_000 }) 
     args.push("--json");
   }
 
-  const { stdout } = await runOpenClaw(args, { env });
+  const { stdout } = await runner(args, { env });
   const redacted = redactText(stdout, secrets);
   const parsed = capabilities.usageJson ? parseUsageJson(redacted) : parseUsageText(redacted);
 

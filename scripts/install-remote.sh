@@ -4,7 +4,7 @@ set -euo pipefail
 REPO="smouj/ClawDesk"
 BASE_URL="https://github.com/${REPO}"
 CHANNEL="${CLAWDESK_CHANNEL:-stable}"
-VERSION="${CLAWDESK_VERSION:-v1.2.0}"
+VERSION="${CLAWDESK_VERSION:-}"
 REF="${CLAWDESK_REF:-main}"
 TMP_DIR="$(mktemp -d)"
 
@@ -31,14 +31,42 @@ else
   exit 1
 fi
 
+fetch_latest_release() {
+  local latest
+  latest="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | \
+    sed -n 's/.*"tag_name": *"\\([^"]*\\)".*/\\1/p' | head -n 1)"
+  if [ -z "$latest" ]; then
+    latest="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${BASE_URL}/releases/latest" | \
+      sed -n 's#.*/tag/##p')"
+  fi
+  if [ -z "$latest" ]; then
+    echo "No se pudo detectar el latest release. Define CLAWDESK_VERSION manualmente." >&2
+    exit 1
+  fi
+  echo "$latest"
+}
+
 if [ "$CHANNEL" = "stable" ]; then
+  if [ -z "$VERSION" ]; then
+    VERSION="$(fetch_latest_release)"
+  fi
   ARCHIVE="clawdesk-${VERSION}.tar.gz"
   RELEASE_PATH="releases/download/${VERSION}/${ARCHIVE}"
   CHECKSUM_PATH="releases/download/${VERSION}/SHA256SUMS"
   echo "Descargando release ${VERSION} (${ARCHIVE})"
-  curl -fsSL "${BASE_URL}/${RELEASE_PATH}" -o "$TMP_DIR/${ARCHIVE}"
-  curl -fsSL "${BASE_URL}/${CHECKSUM_PATH}" -o "$TMP_DIR/SHA256SUMS"
-  (cd "$TMP_DIR" && grep "${ARCHIVE}" SHA256SUMS | $CHECKSUM_CMD -c -)
+  if ! curl -fsSL "${BASE_URL}/${RELEASE_PATH}" -o "$TMP_DIR/${ARCHIVE}"; then
+    echo "No se encontró el release ${VERSION} o el asset ${ARCHIVE}." >&2
+    echo "Revisa https://github.com/${REPO}/releases o define CLAWDESK_VERSION." >&2
+    exit 1
+  fi
+  if ! curl -fsSL "${BASE_URL}/${CHECKSUM_PATH}" -o "$TMP_DIR/SHA256SUMS"; then
+    echo "No se encontró SHA256SUMS para ${VERSION}." >&2
+    exit 1
+  fi
+  if ! (cd "$TMP_DIR" && grep "${ARCHIVE}" SHA256SUMS | $CHECKSUM_CMD -c -); then
+    echo "Checksum inválido para ${ARCHIVE}." >&2
+    exit 1
+  fi
   tar -xzf "$TMP_DIR/${ARCHIVE}" -C "$TMP_DIR"
   INSTALL_SRC="$TMP_DIR/clawdesk-${VERSION}"
 else

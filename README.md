@@ -4,7 +4,7 @@ ClawDesk 🦞 — panel local, security-first, para gestionar OpenClaw desde tu 
 
 > ⚠️ **Seguridad primero**: ClawDesk solo escucha en `127.0.0.1`/`localhost`. No expongas el dashboard a internet. Para acceso remoto, usa túneles cifrados (Tailscale/WireGuard/SSH).
 
-## ✨ Qué incluye (v1.2.0)
+## ✨ Qué incluye (v2.0.0)
 
 - **Daemon local** (Node + Express) que sirve UI y expone `/api/*`.
 - **Compatibilidad OpenClaw total** (probe/start/stop/restart, dashboard link).
@@ -12,8 +12,9 @@ ClawDesk 🦞 — panel local, security-first, para gestionar OpenClaw desde tu 
 - **Auth local** con secret y rotación segura.
 - **Allow-actions** obligatorio para acciones semánticas.
 - **Landing Retro-OS** para instalación y payloads de agentes.
+- **Release automation** con assets + SHA256SUMS.
 
-## 🧭 Instalación (one command)
+## 🧭 Instalación (stable)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash
@@ -22,7 +23,9 @@ curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install
 Opciones:
 
 - `CLAWDESK_CHANNEL=nightly` para instalar desde `main`.
-- `CLAWDESK_VERSION=v1.2.0` para fijar versión estable.
+- `CLAWDESK_VERSION=v2.0.0` para fijar versión estable.
+
+Stable detecta automáticamente el latest release si no defines `CLAWDESK_VERSION`.
 
 ## ▶️ Ejecutar
 
@@ -46,7 +49,7 @@ clawdesk run
 - **No comandos arbitrarios**: se usan `allow_actions` (acciones semánticas).
 - **Exec seguro**: `openclaw` se ejecuta con `execFile` y `shell=false`.
 - **Auth local**: la API exige `Authorization: Bearer <secret>`.
-- **Headers**: CSP estricta + allowlist de host/origin.
+- **Headers**: CSP estricta + allowlist de host/origin + CORS loopback-only.
 - **Redacción**: support bundle elimina tokens/secretos.
 
 ## 🗂️ Estructura del repo
@@ -72,6 +75,7 @@ Sincroniza docs desde la UI:
 - **OpenClaw no detectado**: asegúrate de que `openclaw` esté en PATH.
 - **Token ausente**: revisa `gateway.auth.token` o exporta `OPENCLAW_GATEWAY_TOKEN`.
 - **Puerto ocupado**: cambia el puerto en `config.json` y reinicia.
+- **404 en instalación**: revisa que el release exista y que el asset `clawdesk-vX.Y.Z.tar.gz` esté publicado.
 
 ---
 

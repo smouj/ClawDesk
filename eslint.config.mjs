@@ -1,37 +1,7 @@
-const browserGlobals = {
-  window: "readonly",
-  document: "readonly",
-  navigator: "readonly",
-  alert: "readonly",
-  confirm: "readonly",
-  Event: "readonly",
-  fetch: "readonly",
-  FormData: "readonly",
-  EventSource: "readonly",
-  localStorage: "readonly",
-  performance: "readonly",
-  URL: "readonly",
-  URLSearchParams: "readonly",
-  Blob: "readonly",
-  setTimeout: "readonly",
-  clearTimeout: "readonly",
-  setInterval: "readonly",
-  clearInterval: "readonly",
-};
+import globals from "globals";
 
-const nodeGlobals = {
-  require: "readonly",
-  module: "readonly",
-  process: "readonly",
-  __dirname: "readonly",
-  __filename: "readonly",
-  console: "readonly",
-  setTimeout: "readonly",
-  clearTimeout: "readonly",
-  setInterval: "readonly",
-  clearInterval: "readonly",
-  URL: "readonly",
-};
+const browserGlobals = globals.browser;
+const nodeGlobals = globals.node;
 
 const baseRules = {
   "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -45,35 +15,33 @@ export default [
     ignores: ["node_modules/**", "docs/dashboard/**"],
   },
   {
-    files: ["**/*.js"],
+    files: ["app/**", "docs/**"],
     languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: "script",
+      ecmaVersion: 2021,
+      sourceType: "module",
       globals: {
         ...browserGlobals,
+      },
+    },
+    rules: baseRules,
+  },
+  {
+    files: ["server/**", "tests/**"],
+    languageOptions: {
+      ecmaVersion: 2021,
+      sourceType: "script",
+      globals: {
         ...nodeGlobals,
       },
     },
     rules: baseRules,
   },
   {
-    files: ["app/js/**/*.js"],
+    files: ["tests/**/*.mjs"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
       globals: {
-        ...browserGlobals,
-      },
-    },
-    rules: baseRules,
-  },
-  {
-    files: ["**/*.mjs"],
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: "module",
-      globals: {
-        ...browserGlobals,
         ...nodeGlobals,
       },
     },

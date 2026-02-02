@@ -1,6 +1,6 @@
 import { api, streamLogs } from "./api.js";
 import { getState, setState, subscribe } from "./store.js";
-import { showToast } from "./ui/components.js";
+import { debounce, showToast } from "./ui/components.js";
 import {
   renderDashboard,
   renderProfiles,
@@ -24,6 +24,9 @@ const setActivePage = (page) => {
   });
   document.querySelectorAll(".tabstrip button").forEach((button) => {
     button.classList.toggle("active", button.dataset.page === page);
+    const isActive = button.dataset.page === page;
+    button.setAttribute("aria-selected", String(isActive));
+    button.setAttribute("tabindex", isActive ? "0" : "-1");
   });
 };
 
@@ -78,8 +81,18 @@ const init = async () => {
     });
   }
 
-  document.querySelectorAll(".tabstrip button").forEach((button) => {
+  const tabButtons = Array.from(document.querySelectorAll(".tabstrip button"));
+  tabButtons.forEach((button, index) => {
     button.addEventListener("click", () => setActivePage(button.dataset.page));
+    button.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const nextIndex = (index + direction + tabButtons.length) % tabButtons.length;
+      const nextButton = tabButtons[nextIndex];
+      nextButton.focus();
+      setActivePage(nextButton.dataset.page);
+    });
   });
 
   document.getElementById("refresh-dashboard")?.addEventListener("click", async () => {
@@ -102,7 +115,9 @@ const init = async () => {
       showToast(error.message, "warn");
     }
   });
-  document.getElementById("view-events")?.addEventListener("click", () => setActivePage("timeline"));
+  document
+    .getElementById("view-events")
+    ?.addEventListener("click", () => setActivePage("timeline"));
 
   const guideModal = document.getElementById("guide-modal");
   const guideTitle = document.getElementById("guide-title");
@@ -275,6 +290,7 @@ const init = async () => {
       : logLines;
     setState({ logs: filtered });
   };
+  const applyLogFilterDebounced = debounce(applyLogFilter, 200);
   document.getElementById("toggle-scroll")?.addEventListener("click", (event) => {
     paused = !paused;
     event.target.textContent = paused ? "Resume" : "Pause";
@@ -288,7 +304,7 @@ const init = async () => {
     link.click();
   });
   filterInput?.addEventListener("input", () => {
-    applyLogFilter();
+    applyLogFilterDebounced();
   });
 
   const refreshRateSlider = document.getElementById("refresh-rate");
@@ -301,15 +317,18 @@ const init = async () => {
   let logSource = null;
   const startLogStream = (interval) => {
     logSource?.close();
-    logSource = streamLogs((event, data) => {
-      if (event === "logs") {
-        logLines = data.lines || [];
-        if (!paused) applyLogFilter();
-      }
-      if (event === "error") {
-        showToast("Error al conectar logs en tiempo real", "warn");
-      }
-    }, { interval });
+    logSource = streamLogs(
+      (event, data) => {
+        if (event === "logs") {
+          logLines = data.lines || [];
+          if (!paused) applyLogFilter();
+        }
+        if (event === "error") {
+          showToast("Error al conectar logs en tiempo real", "warn");
+        }
+      },
+      { interval }
+    );
   };
   startLogStream(refreshRateSlider?.value || 1500);
   refreshRateSlider?.addEventListener("change", (event) => {
