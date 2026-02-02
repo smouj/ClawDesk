@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0] - 2026-02-02
+
+### Added
+
+- Instalador local con validación de bind segura, modo no interactivo y self-test.
+- Remote installer con auto-latest vía GitHub Releases y verificación SHA256.
+- /api/health ampliado con estado OpenClaw y reachability del gateway.
+- UI Mission Control con acciones rápidas y estados detallados.
+- CONTRIBUTING.md y SECURITY.md.
+
+### Changed
+
+- UI/UX en español con textos más profesionales y controles de logs mejorados.
+- Instalador detecta OpenClaw config y recomienda túneles cifrados.
+
+### Fixed
+
+- Bind vacío ya no falla: usa 127.0.0.1 por defecto.
+
 ## [2.0.0] - 2024-10-01
 
 ### Added

@@ -15,7 +15,7 @@ SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 SERVICE_FILE="$SYSTEMD_USER_DIR/clawdesk.service"
 
 NONINTERACTIVE="${INSTALL_NONINTERACTIVE:-0}"
-TOTAL_STEPS=7
+TOTAL_STEPS=8
 CURRENT_STEP=0
 
 USE_COLOR=1
@@ -90,6 +90,16 @@ prompt_default() {
   fi
 }
 
+parse_args() {
+  for arg in "$@"; do
+    case "$arg" in
+      --yes|--non-interactive)
+        NONINTERACTIVE=1
+        ;;
+    esac
+  done
+}
+
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     log_fail "Falta el comando requerido: $1"
@@ -155,6 +165,57 @@ detect_wsl() {
   echo "$is_wsl"
 }
 
+is_loopback() {
+  case "$1" in
+    127.0.0.1|localhost|::1)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+is_blocked_bind() {
+  case "$1" in
+    0.0.0.0|::|0:0:0:0:0:0:0:0)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+confirm_non_loopback() {
+  local bind="$1"
+  if [ "$NONINTERACTIVE" = "1" ]; then
+    if [ "${CLAWDESK_ALLOW_NON_LOOPBACK:-0}" != "1" ] || [ "${CLAWDESK_ALLOW_NON_LOOPBACK_CONFIRM:-}" != "SI" ]; then
+      log_fail "Bind no loopback (${bind}) bloqueado en modo no interactivo."
+      log_warn "Define CLAWDESK_ALLOW_NON_LOOPBACK=1 y CLAWDESK_ALLOW_NON_LOOPBACK_CONFIRM=SI si aceptas el riesgo."
+      exit 1
+    fi
+    return 0
+  fi
+  log_warn "Has seleccionado un bind no loopback (${bind}). Esto expone el gateway en red local."
+  log_warn "Recomendación: usa túneles cifrados (Tailscale/WireGuard/SSH) en lugar de exponer puertos."
+  read -r -p "Escribe ACEPTAR-RIESGO para continuar: " confirm_risk
+  if [ "$confirm_risk" != "ACEPTAR-RIESGO" ]; then
+    log_fail "Confirmación de riesgo inválida. Abortando."
+    exit 1
+  fi
+  read -r -p "Confirma nuevamente el bind ${bind} (escribe SI): " confirm_bind
+  if [ "$confirm_bind" != "SI" ]; then
+    log_fail "Confirmación final inválida. Abortando."
+    exit 1
+  fi
+}
+
+normalize_bind() {
+  local bind="$1"
+  if [ -z "$bind" ]; then
+    echo "127.0.0.1"
+    return
+  fi
+  echo "$bind"
+}
+
 find_openclaw_bin() {
   for candidate in openclaw clawdbot moltbot; do
     if command -v "$candidate" >/dev/null 2>&1; then
@@ -211,6 +272,40 @@ PY
   fi
 }
 
+read_openclaw_defaults() {
+  local openclaw_config="$HOME/.openclaw/openclaw.json"
+  if [ -f "$openclaw_config" ]; then
+    python3 - <<PY
+import json
+from pathlib import Path
+path = Path("$openclaw_config")
+try:
+    data = json.loads(path.read_text())
+except Exception:
+    print("")
+    print("")
+    print("")
+    print("")
+    raise SystemExit(0)
+gateway = data.get("gateway", {}) if isinstance(data, dict) else {}
+bind = gateway.get("bind", "")
+port = gateway.get("port", "")
+token = ""
+auth = gateway.get("auth", {}) if isinstance(gateway, dict) else {}
+token = auth.get("token", "")
+print(bind)
+print(port)
+print(token)
+print(str(path))
+PY
+  else
+    echo ""
+    echo ""
+    echo ""
+    echo ""
+  fi
+}
+
 validate_port() {
   local label="$1"
   local port="$2"
@@ -249,6 +344,24 @@ try:
     print("open")
 except Exception:
     print("closed")
+PY
+}
+
+parse_gateway_url() {
+  local gateway_url="$1"
+  if [ -z "$gateway_url" ]; then
+    echo ""
+    echo ""
+    return
+  fi
+  python3 - <<PY
+from urllib.parse import urlparse
+url = "$gateway_url"
+parsed = urlparse(url)
+host = parsed.hostname or ""
+port = parsed.port or ""
+print(host)
+print(port)
 PY
 }
 
@@ -508,8 +621,8 @@ run_doctor() {
   require_config
   read -r host port gateway_bind gateway_port token_path token_value < <(read_config)
 
-  echo "✅ Host: ${host}"
-  echo "✅ Port: ${port}"
+  echo "✅ Host dashboard: ${host}"
+  echo "✅ Port dashboard: ${port}"
 
   local bin=""
   for candidate in openclaw clawdbot moltbot; do
@@ -585,6 +698,9 @@ PY
   fi
   echo "Gateway Bind: ${gateway_bind}"
   echo "Gateway Port: ${gateway_port} (source: ${port_source})"
+  if [ "$gateway_bind" = "0.0.0.0" ] || [ "$gateway_bind" = "::" ]; then
+    echo "⚠️ Bind inseguro detectado. Cambia a 127.0.0.1/localhost/::1."
+  fi
 
   python3 - <<PY
 import socket
@@ -705,6 +821,7 @@ SCRIPT
   log_ok "Comando instalado en $target_dir/$APP_NAME"
 }
 
+parse_args "$@"
 banner
 log_info "Tip: instala con git clone + bash install.sh"
 
@@ -715,7 +832,7 @@ OS_NAME="$(uname -s)"
 IS_WSL="$(detect_wsl)"
 log_info "Sistema: $OS_NAME"
 if [ "$IS_WSL" = "1" ]; then
-  log_warn "WSL detectado. Recuerda que localhost es compartido con Windows."
+  log_warn "WSL detectado. localhost es compartido con Windows (abre el dashboard desde Windows usando 127.0.0.1)."
 fi
 
 missing=0
@@ -760,8 +877,33 @@ log_ok "Dependencias instaladas"
 log_step "Configuración y auto-sincronización OpenClaw"
 ensure_config
 read -r DEFAULT_APP_PORT DEFAULT_GATEWAY_BIND DEFAULT_GATEWAY_PORT DEFAULT_TOKEN_PATH < <(read_config_defaults)
+read -r OPENCLAW_BIND OPENCLAW_PORT OPENCLAW_TOKEN OPENCLAW_CONFIG_PATH < <(read_openclaw_defaults)
 
-APP_PORT=$(prompt_default "Puerto para el dashboard (default ${DEFAULT_APP_PORT}): " "$DEFAULT_APP_PORT")
+if [ -n "$OPENCLAW_CONFIG_PATH" ]; then
+  log_ok "Detectado OpenClaw config en ${OPENCLAW_CONFIG_PATH}"
+else
+  log_warn "No se encontró ~/.openclaw/openclaw.json (opcional)."
+fi
+
+if [ -n "${OPENCLAW_GATEWAY_URL:-}" ]; then
+  read -r URL_BIND URL_PORT < <(parse_gateway_url "$OPENCLAW_GATEWAY_URL")
+  if [ -n "$URL_BIND" ]; then
+    DEFAULT_GATEWAY_BIND="$URL_BIND"
+  fi
+  if [ -n "$URL_PORT" ]; then
+    DEFAULT_GATEWAY_PORT="$URL_PORT"
+  fi
+fi
+
+if [ -n "$OPENCLAW_BIND" ]; then
+  DEFAULT_GATEWAY_BIND="$OPENCLAW_BIND"
+fi
+if [ -n "$OPENCLAW_PORT" ]; then
+  DEFAULT_GATEWAY_PORT="$OPENCLAW_PORT"
+fi
+
+APP_PORT_ENV="${CLAWDESK_PORT:-}"
+APP_PORT=$(prompt_default "Puerto para el dashboard (default ${DEFAULT_APP_PORT}): " "${APP_PORT_ENV:-$DEFAULT_APP_PORT}")
 validate_port "Puerto de dashboard" "$APP_PORT"
 
 if [ "$(check_port_available "$APP_PORT")" = "busy" ]; then
@@ -769,16 +911,23 @@ if [ "$(check_port_available "$APP_PORT")" = "busy" ]; then
   exit 1
 fi
 
-GATEWAY_BIND=$(prompt_default "Bind del gateway (default ${DEFAULT_GATEWAY_BIND}): " "$DEFAULT_GATEWAY_BIND")
-if [ "$GATEWAY_BIND" != "127.0.0.1" ] && [ "$GATEWAY_BIND" != "localhost" ]; then
-  log_fail "El gateway debe enlazarse a loopback por seguridad."
+GATEWAY_BIND_ENV="${CLAWDESK_BIND:-}"
+GATEWAY_BIND=$(prompt_default "Bind del gateway (loopback recomendado, default ${DEFAULT_GATEWAY_BIND}): " "${GATEWAY_BIND_ENV:-$DEFAULT_GATEWAY_BIND}")
+GATEWAY_BIND=$(normalize_bind "$GATEWAY_BIND")
+if is_blocked_bind "$GATEWAY_BIND"; then
+  log_fail "Bind ${GATEWAY_BIND} no permitido por seguridad."
   exit 1
 fi
+if ! is_loopback "$GATEWAY_BIND"; then
+  confirm_non_loopback "$GATEWAY_BIND"
+fi
 
-GATEWAY_PORT=$(prompt_default "Puerto del gateway (default ${DEFAULT_GATEWAY_PORT}): " "$DEFAULT_GATEWAY_PORT")
+GATEWAY_PORT_ENV="${CLAWDESK_GATEWAY_PORT:-${OPENCLAW_GATEWAY_PORT:-}}"
+GATEWAY_PORT=$(prompt_default "Puerto del gateway (default ${DEFAULT_GATEWAY_PORT}): " "${GATEWAY_PORT_ENV:-$DEFAULT_GATEWAY_PORT}")
 validate_port "Puerto del gateway" "$GATEWAY_PORT"
 
-TOKEN_PATH=$(prompt_default "Ruta de gateway.auth.token (default ${DEFAULT_TOKEN_PATH}): " "$DEFAULT_TOKEN_PATH")
+TOKEN_PATH_ENV="${CLAWDESK_TOKEN_PATH:-}"
+TOKEN_PATH=$(prompt_default "Ruta de gateway.auth.token (default ${DEFAULT_TOKEN_PATH}): " "${TOKEN_PATH_ENV:-$DEFAULT_TOKEN_PATH}")
 
 OPENCLAW_BIN=$(find_openclaw_bin)
 if [ -n "$OPENCLAW_BIN" ]; then
@@ -792,6 +941,9 @@ TOKEN_SOURCE="missing"
 if [ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]; then
   TOKEN_VALUE="$OPENCLAW_GATEWAY_TOKEN"
   TOKEN_SOURCE="env"
+elif [ -n "$OPENCLAW_TOKEN" ]; then
+  TOKEN_VALUE="$OPENCLAW_TOKEN"
+  TOKEN_SOURCE="openclaw"
 elif [ -n "$TOKEN_PATH" ] && [ -f "$TOKEN_PATH" ]; then
   TOKEN_VALUE="$(cat "$TOKEN_PATH")"
   TOKEN_SOURCE="file"
@@ -800,16 +952,16 @@ fi
 if [ -n "$TOKEN_VALUE" ]; then
   log_ok "Token detectado (${TOKEN_SOURCE}), oculto: $(mask_token "$TOKEN_VALUE")"
 else
-  log_warn "Token no encontrado. Puedes exportar OPENCLAW_GATEWAY_TOKEN o crear $TOKEN_PATH"
+  log_warn "Token no encontrado. Exporta OPENCLAW_GATEWAY_TOKEN, crea $TOKEN_PATH o configura OpenClaw."
 fi
 
-write_config "$APP_PORT" "127.0.0.1" "$GATEWAY_PORT" "$TOKEN_PATH" "$TOKEN_VALUE"
+write_config "$APP_PORT" "$GATEWAY_BIND" "$GATEWAY_PORT" "$TOKEN_PATH" "$TOKEN_VALUE"
 ensure_secret
 
-if [ "$(check_tcp "127.0.0.1" "$GATEWAY_PORT")" = "open" ]; then
-  log_ok "Gateway responde en 127.0.0.1:$GATEWAY_PORT"
+if [ "$(check_tcp "$GATEWAY_BIND" "$GATEWAY_PORT")" = "open" ]; then
+  log_ok "Gateway responde en ${GATEWAY_BIND}:$GATEWAY_PORT"
 else
-  log_warn "Gateway no responde en 127.0.0.1:$GATEWAY_PORT"
+  log_warn "Gateway no responde en ${GATEWAY_BIND}:$GATEWAY_PORT"
 fi
 
 if [ -n "$OPENCLAW_BIN" ] && [ -n "$TOKEN_VALUE" ]; then
@@ -827,6 +979,26 @@ if [ -w "$BIN_DIR_GLOBAL" ]; then
 fi
 create_cli "$TARGET_BIN_DIR"
 install_service
+
+log_step "Self-test local"
+if "$APP_NAME" run >/dev/null 2>&1; then
+  SECRET_VALUE="$(cat "$SECRET_FILE")"
+  python3 - <<PY
+from urllib.request import Request, urlopen
+import json
+url = "http://127.0.0.1:${APP_PORT}/api/health"
+req = Request(url, headers={"Authorization": f"Bearer {open('$SECRET_FILE').read().strip()}"})
+try:
+    with urlopen(req, timeout=4) as resp:
+        payload = resp.read().decode("utf-8")
+        data = json.loads(payload)
+        print("✅ Health OK:", data.get("status"), "| gateway:", data.get("gateway", {}).get("status"))
+except Exception as exc:
+    print("⚠️ Health check falló:", exc)
+PY
+else
+  log_warn "No se pudo iniciar el daemon en self-test. Ejecuta: clawdesk run"
+fi
 
 log_step "Instalación completa"
 printf "\n%s%sInstalación completa%s\n" "$C_GREEN" "$C_BOLD" "$C_RESET"

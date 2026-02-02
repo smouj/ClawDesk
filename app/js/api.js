@@ -28,6 +28,8 @@ export const api = {
     request("/profiles/save", { method: "POST", body: JSON.stringify(payload) }),
   deleteProfile: (name) => request(`/profiles/${name}`, { method: "DELETE" }),
   getGatewayStatus: () => request("/gateway/status"),
+  gatewayAction: (action) => request(`/gateway/${action}`, { method: "POST" }),
+  getHealth: () => request("/health"),
   getGatewayControlUrl: () => request("/gateway/control-url"),
   probeGateway: () => request("/gateway/probe"),
   getUsageSnapshot: () => request("/usage/snapshot"),

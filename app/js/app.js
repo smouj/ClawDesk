@@ -151,6 +151,30 @@ const init = async () => {
   document
     .getElementById("view-events")
     ?.addEventListener("click", () => setActivePage("timeline"));
+  document.getElementById("open-logs")?.addEventListener("click", () => setActivePage("logs"));
+
+  const bindAction = (id, action, label) => {
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.addEventListener("click", async () => {
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = "Procesando...";
+      try {
+        await api.gatewayAction(action);
+        await loadDashboard({ api, setState });
+        showToast(`${label} ejecutado`, "ok");
+      } catch (error) {
+        showToast(error.message, "warn");
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    });
+  };
+  bindAction("gateway-start", "start", "Inicio");
+  bindAction("gateway-stop", "stop", "Detención");
+  bindAction("gateway-restart", "restart", "Reinicio");
 
   const guideModal = document.getElementById("guide-modal");
   const guideTitle = document.getElementById("guide-title");
@@ -326,7 +350,7 @@ const init = async () => {
   const applyLogFilterDebounced = debounce(applyLogFilter, 200);
   document.getElementById("toggle-scroll")?.addEventListener("click", (event) => {
     paused = !paused;
-    event.target.textContent = paused ? "Resume" : "Pause";
+    event.target.textContent = paused ? "Reanudar" : "Pausar";
   });
   document.getElementById("download-logs")?.addEventListener("click", () => {
     const blob = new Blob([logLines.join("\n")], { type: "text/plain" });
@@ -335,6 +359,10 @@ const init = async () => {
     link.href = url;
     link.download = "gateway-logs.txt";
     link.click();
+  });
+  document.getElementById("clear-logs")?.addEventListener("click", () => {
+    logLines = [];
+    setState({ logs: [] });
   });
   filterInput?.addEventListener("input", () => {
     applyLogFilterDebounced();

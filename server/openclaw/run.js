@@ -1,12 +1,18 @@
 const { execFile } = require("child_process");
 const { detectBinary } = require("./detectBinary");
 
+const sanitizeArgs = (args) => {
+  if (!Array.isArray(args)) return [];
+  return args.filter((arg) => typeof arg === "string" && arg.trim().length > 0);
+};
+
 const runOpenClaw = (args, { env = {}, timeout = 15_000, maxBuffer = 512 * 1024, binary } = {}) =>
   new Promise((resolve, reject) => {
     const resolved = binary ? { binary } : detectBinary();
+    const safeArgs = sanitizeArgs(args);
     execFile(
       resolved.binary,
-      args,
+      safeArgs,
       {
         timeout,
         maxBuffer,

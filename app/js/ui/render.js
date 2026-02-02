@@ -23,6 +23,8 @@ export const renderDashboard = (state) => {
   const gatewaySummary = document.getElementById("gateway-summary");
   const gatewayBind = document.getElementById("gateway-bind");
   const gatewayLatency = document.getElementById("gateway-latency");
+  const gatewayToken = document.getElementById("gateway-token");
+  const gatewayActivity = document.getElementById("gateway-activity");
   const gatewayAllow = document.getElementById("gateway-allow");
   const gatewayVersion = document.getElementById("gateway-version");
   const usageTokens = document.getElementById("usage-tokens");
@@ -30,6 +32,8 @@ export const renderDashboard = (state) => {
   const usageNote = document.getElementById("usage-note");
   const usageState = document.getElementById("usage-state");
   const lcdStatus = document.getElementById("lcd-status");
+  const lcdLatency = document.getElementById("lcd-latency");
+  const lcdUptime = document.getElementById("lcd-uptime");
   const versionBadge = document.getElementById("version-badge");
   const openControl = document.getElementById("open-control-ui");
   const recentEvents = document.getElementById("recent-events");
@@ -48,8 +52,6 @@ export const renderDashboard = (state) => {
     if (gatewaySummary) {
       gatewaySummary.textContent = statusText || "Sin datos";
     }
-    setLcd(gatewayBind, `bind ${state.gateway.profile || "--"}`);
-    setLcd(gatewayLatency, `latency ${state.gateway.latency || "--"}`);
   }
 
   if (state.usage) {
@@ -75,7 +77,7 @@ export const renderDashboard = (state) => {
     }
     if (gatewayAllow && state.config.security?.allow_actions) {
       const count = state.config.security.allow_actions.length;
-      gatewayAllow.textContent = `allow ${count}`;
+      gatewayAllow.textContent = `acciones ${count}`;
       gatewayAllow.className = `badge ${count ? "ok" : "warn"}`;
     }
     if (openControl) {
@@ -87,7 +89,32 @@ export const renderDashboard = (state) => {
     const profile = state.config.profiles?.find((p) => p.name === active);
     if (profile) {
       setLcd(lcdStatus, `${profile.bind}:${profile.port}`);
+      setLcd(gatewayBind, `bind ${profile.bind}:${profile.port}`);
     }
+  }
+
+  if (state.health) {
+    if (lcdLatency) {
+      const latency = state.health.gateway?.latency_ms;
+      setLcd(lcdLatency, latency ? `${latency} ms` : "-- ms");
+    }
+    if (lcdUptime) {
+      setLcd(lcdUptime, `${state.health.uptime_s ?? "--"} s`);
+    }
+    if (gatewayToken) {
+      gatewayToken.textContent = state.health.gateway?.token_present ? "detectado" : "no encontrado";
+      gatewayToken.className = `kpi-value ${
+        state.health.gateway?.token_present ? "ok" : "warn"
+      }`;
+    }
+    if (state.health.openclaw?.version && gatewayVersion) {
+      gatewayVersion.textContent = state.health.openclaw.version;
+    }
+  }
+
+  if (gatewayActivity) {
+    const latest = (state.events || [])[state.events?.length - 1];
+    gatewayActivity.textContent = `última actividad ${latest?.timestamp || latest?.time || "--"}`;
   }
 
   if (recentEvents) {
@@ -131,7 +158,7 @@ export const renderProfiles = (state) => {
     card.innerHTML = `
       <div class="section-header">
         <h3>${profile.name}</h3>
-        <span class="badge ${profile.remote ? "warn" : "ok"}">${profile.remote ? "remote" : "local"}</span>
+        <span class="badge ${profile.remote ? "warn" : "ok"}">${profile.remote ? "remoto" : "local"}</span>
       </div>
       <p class="muted">${profile.bind}:${profile.port}</p>
       <div class="inline">
@@ -153,11 +180,11 @@ export const renderUsage = (state) => {
   setLcd(document.getElementById("usage-total-tokens"), `tokens ${totals.tokensIn ?? "n/a"}`);
   setLcd(document.getElementById("usage-total-cost"), `cost ${totals.cost ?? "n/a"}`);
   const ts = document.getElementById("usage-timestamp");
-  if (ts) ts.textContent = timestamp ? `Updated ${timestamp}` : "--";
+  if (ts) ts.textContent = timestamp ? `Actualizado ${timestamp}` : "--";
 
   setTable(
     document.getElementById("usage-providers"),
-    ["Provider", "Tokens", "Cost", "Reqs"],
+    ["Proveedor", "Tokens", "Coste", "Reqs"],
     byProvider.map((item) => [
       item.name,
       item.tokens ?? "n/a",
@@ -167,12 +194,12 @@ export const renderUsage = (state) => {
   );
   setTable(
     document.getElementById("usage-models"),
-    ["Model", "Tokens", "Cost"],
+    ["Modelo", "Tokens", "Coste"],
     byModel.map((item) => [item.name, item.tokens ?? "n/a", item.cost ?? "n/a"])
   );
   setTable(
     document.getElementById("usage-tools"),
-    ["Tool", "Usage", "Cost"],
+    ["Herramienta", "Uso", "Coste"],
     byTool.map((item) => [item.name, item.usage ?? "n/a", item.cost ?? "n/a"])
   );
 };
@@ -192,7 +219,7 @@ export const renderMacros = (state) => {
     row.innerHTML = `<strong>${name}</strong><span class="muted">${macro.description || ""}</span>`;
     const button = document.createElement("button");
     button.className = "btn secondary";
-    button.textContent = "Run";
+    button.textContent = "Ejecutar";
     button.dataset.name = name;
     row.appendChild(button);
     list.appendChild(row);

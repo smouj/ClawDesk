@@ -4,14 +4,19 @@ const fs = require("fs");
 const { createServer } = require("./server");
 const { PID_PATH, LOG_PATH } = require("./config/loadConfig");
 const { redactText } = require("./security/redaction");
+const { createLogger } = require("./utils/logger");
 
 const start = () => {
-  const { app, config } = createServer();
+  const { app, config, secret } = createServer();
+  const logger = createLogger([secret, process.env.OPENCLAW_GATEWAY_TOKEN]);
   const server = http.createServer(app);
 
   server.listen(config.app.port, config.app.host, () => {
     fs.writeFileSync(PID_PATH, String(process.pid));
-    console.log(`ClawDesk disponible en http://${config.app.host}:${config.app.port}`);
+    logger.info("ClawDesk disponible", {
+      host: config.app.host,
+      port: config.app.port,
+    });
   });
 
   const shutdown = () => {
@@ -31,9 +36,10 @@ if (require.main === module) {
   try {
     start();
   } catch (error) {
+    const logger = createLogger([process.env.OPENCLAW_GATEWAY_TOKEN]);
     const redacted = redactText(error.message, [process.env.OPENCLAW_GATEWAY_TOKEN]);
     fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${redacted}\n`);
-    console.error(redacted);
+    logger.error("Error al iniciar ClawDesk", { error: error.message });
     process.exit(1);
   }
 }
