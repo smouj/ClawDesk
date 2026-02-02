@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="clawdesk-api-token" content="__CLAWDESK_TOKEN__" />
-    <title>ClawDesk OS · Retro-OS 2000 v2.0.0</title>
+    <title>ClawDesk OS · Mission Control v2.0.0</title>
     <link rel="icon" href="assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles/tokens.css" />
     <link rel="stylesheet" href="styles/components.css" />
@@ -17,7 +17,7 @@
           <img src="assets/brand/logo-brain.svg" alt="ClawDesk logo" />
           <div>
             <h1>ClawDesk OS</h1>
-            <small>Retro-OS 2000 · Security-first Control Plane</small>
+            <small>Mission Control · Security-first · Loopback-only</small>
           </div>
         </div>
         <div class="status">
@@ -27,12 +27,12 @@
               <strong id="lcd-status">127.0.0.1:--</strong>
             </div>
             <div class="metric-chip muted">
-              <span>Latency</span>
-              <strong>-- ms</strong>
+              <span>Latencia</span>
+              <strong id="lcd-latency">-- ms</strong>
             </div>
             <div class="metric-chip muted">
               <span>Uptime</span>
-              <strong>--</strong>
+              <strong id="lcd-uptime">--</strong>
             </div>
           </div>
           <div class="status-controls">
@@ -53,7 +53,7 @@
           aria-controls="page-dashboard"
           tabindex="0"
         >
-          Dashboard
+          Estado
         </button>
         <button
           data-page="profiles"
@@ -62,7 +62,7 @@
           aria-controls="page-profiles"
           tabindex="-1"
         >
-          Profiles
+          Perfiles
         </button>
         <button
           data-page="macros"
@@ -80,7 +80,7 @@
           aria-controls="page-usage"
           tabindex="-1"
         >
-          Usage Center
+          Uso
         </button>
         <button
           data-page="timeline"
@@ -89,7 +89,7 @@
           aria-controls="page-timeline"
           tabindex="-1"
         >
-          Timeline
+          Línea de tiempo
         </button>
         <button
           data-page="logs"
@@ -107,7 +107,7 @@
           aria-controls="page-settings"
           tabindex="-1"
         >
-          Settings
+          Ajustes
         </button>
       </nav>
 
@@ -123,59 +123,60 @@
               id="refresh-dashboard"
               aria-label="Sincronizar estado del dashboard"
             >
-              Sync
+              Sincronizar
             </button>
             <button class="btn secondary" id="open-control-ui" aria-label="Abrir panel del gateway">
-              Open Control UI
+              Abrir Control UI
             </button>
           </div>
         </div>
         <div class="stats-grid">
           <article class="card">
             <div class="section-header">
-              <h3>Gateway</h3>
-              <span class="badge ok" id="gateway-allow">allow-actions</span>
+              <h3>Mission Control</h3>
+              <span class="badge ok" id="gateway-allow">policy</span>
             </div>
             <div class="card-kpi">
               <span class="status-pill" id="gateway-summary">Sin datos</span>
               <div class="kpi-stack">
                 <div>
-                  <span class="kpi-label">Version</span>
+                  <span class="kpi-label">Gateway</span>
                   <strong class="kpi-value" id="gateway-version">--</strong>
                 </div>
                 <div>
-                  <span class="kpi-label">Connections</span>
-                  <strong class="kpi-value muted">--</strong>
+                  <span class="kpi-label">Token</span>
+                  <strong class="kpi-value" id="gateway-token">--</strong>
                 </div>
               </div>
             </div>
             <div class="inline">
-              <span class="lcd" id="gateway-latency">latency --</span>
+              <span class="lcd" id="gateway-latency">latencia --</span>
               <span class="lcd" id="gateway-bind">bind --</span>
+              <span class="lcd" id="gateway-activity">última actividad --</span>
             </div>
           </article>
           <article class="card">
             <div class="section-header">
-              <h3>Security</h3>
-              <span class="badge ok">Loopback</span>
+              <h3>Acciones rápidas</h3>
+              <span class="badge ok">loopback</span>
             </div>
-            <p class="muted">Acceso remoto solo vía túneles cifrados (Tailscale/WireGuard/SSH).</p>
-            <div class="inline">
-              <button
-                class="btn secondary"
-                id="tailscale-guide"
-                aria-label="Abrir guía de Tailscale"
-              >
-                Guía Tailscale
+            <p class="muted">Acciones seguras sobre el gateway. Se aplican políticas de allow-actions.</p>
+            <div class="inline wrap">
+              <button class="btn" id="gateway-start" aria-label="Iniciar gateway">Iniciar</button>
+              <button class="btn secondary" id="gateway-stop" aria-label="Detener gateway">
+                Detener
               </button>
-              <button class="btn secondary" id="ssh-guide" aria-label="Abrir guía de SSH Tunneling">
-                Guía SSH
+              <button class="btn secondary" id="gateway-restart" aria-label="Reiniciar gateway">
+                Reiniciar
+              </button>
+              <button class="btn ghost" id="open-logs" aria-label="Abrir logs">
+                Ver logs
               </button>
             </div>
           </article>
           <article class="card">
             <div class="section-header">
-              <h3>Usage Today</h3>
+              <h3>Usage hoy</h3>
               <span class="badge" id="usage-state">n/a</span>
             </div>
             <div class="kpi-split">
@@ -192,51 +193,48 @@
           </article>
           <article class="card">
             <div class="section-header">
-              <h3>Agents</h3>
+              <h3>Seguridad</h3>
               <span class="badge">0 total</span>
             </div>
-            <div class="agent-summary">
-              <div>
-                <span class="dot dot-ok"></span>
-                <span class="muted">Running</span>
-                <strong>0</strong>
-              </div>
-              <div>
-                <span class="dot dot-warn"></span>
-                <span class="muted">Idle</span>
-                <strong>0</strong>
-              </div>
-              <div>
-                <span class="dot dot-muted"></span>
-                <span class="muted">Stopped</span>
-                <strong>0</strong>
-              </div>
+            <p class="muted">
+              Acceso remoto seguro solo vía túneles cifrados (Tailscale/WireGuard/SSH).
+            </p>
+            <div class="inline">
+              <button
+                class="btn secondary"
+                id="tailscale-guide"
+                aria-label="Abrir guía de Tailscale"
+              >
+                Guía Tailscale
+              </button>
+              <button class="btn secondary" id="ssh-guide" aria-label="Abrir guía de SSH Tunneling">
+                Guía SSH
+              </button>
             </div>
-            <p class="muted">Sin telemetría de agentes.</p>
           </article>
         </div>
         <div class="dashboard-grid">
           <div class="dashboard-panel">
             <div class="section-header">
-              <h3>Active Agents</h3>
+              <h3>Agentes activos</h3>
               <button
                 class="btn secondary"
                 id="view-agents"
                 aria-label="Ver agentes en el Control UI"
               >
-                Open Control UI
+                Abrir Control UI
               </button>
             </div>
             <div class="agent-grid">
               <div class="empty-state">
                 <strong>Sin agentes conectados</strong>
-                <span class="muted">Activa un agente o revisa el gateway.</span>
+                <span class="muted">Activa un agente o revisa el estado del gateway.</span>
               </div>
             </div>
           </div>
           <div class="dashboard-panel">
             <div class="section-header">
-              <h3>Recent Events</h3>
+              <h3>Eventos recientes</h3>
               <button class="btn ghost" id="view-events" aria-label="Ver todos los eventos">
                 Ver todo
               </button>
@@ -249,7 +247,7 @@
       <section class="page" id="page-profiles">
         <div class="toolbar">
           <div>
-            <h2>Multi-Gateway Profiles</h2>
+            <h2>Perfiles multi-gateway</h2>
             <p class="muted">Gestiona conexiones locales y remotas con seguridad primero.</p>
           </div>
           <button class="btn" id="new-profile" aria-label="Crear nuevo perfil">Nuevo perfil</button>
@@ -260,7 +258,7 @@
 
       <section class="page" id="page-macros">
         <div class="toolbar">
-          <h2>Automation / Macros</h2>
+          <h2>Automatización y macros</h2>
         </div>
         <div class="grid-2">
           <div class="card">
@@ -277,8 +275,8 @@
       <section class="page" id="page-usage">
         <div class="toolbar">
           <div>
-            <h2>Usage Center</h2>
-            <p class="muted">Token usage y costos por proveedor/modelo.</p>
+            <h2>Centro de uso</h2>
+            <p class="muted">Tokens y costos por proveedor/modelo.</p>
           </div>
           <div class="inline">
             <select id="usage-range">
@@ -286,17 +284,17 @@
               <option value="7d">Últimos 7 días</option>
             </select>
             <button class="btn secondary" id="export-json" aria-label="Exportar uso en JSON">
-              Export JSON
+              Exportar JSON
             </button>
             <button class="btn secondary" id="export-csv" aria-label="Exportar uso en CSV">
-              Export CSV
+              Exportar CSV
             </button>
           </div>
         </div>
         <div class="usage-grid">
           <article class="card usage-card">
             <div class="section-header">
-              <h3>Total Tokens</h3>
+            <h3>Total tokens</h3>
               <span class="badge ok">24h</span>
             </div>
             <strong class="kpi-large" id="usage-total-tokens">tokens --</strong>
@@ -304,7 +302,7 @@
           </article>
           <article class="card usage-card">
             <div class="section-header">
-              <h3>Total Cost</h3>
+            <h3>Coste total</h3>
               <span class="badge">Providers</span>
             </div>
             <strong class="kpi-large" id="usage-total-cost">cost --</strong>
@@ -312,7 +310,7 @@
           </article>
           <article class="card usage-card">
             <div class="section-header">
-              <h3>API Calls</h3>
+            <h3>API calls</h3>
               <span class="badge warn">n/a</span>
             </div>
             <strong class="kpi-large muted">--</strong>
@@ -320,22 +318,22 @@
           </article>
           <article class="card usage-card">
             <div class="section-header">
-              <h3>Avg. Latency</h3>
+            <h3>Latencia media</h3>
               <span class="badge warn">n/a</span>
             </div>
             <strong class="kpi-large muted">--</strong>
             <p class="muted">Sin telemetría de latencia.</p>
           </article>
           <article class="card">
-            <h3>By Provider</h3>
+            <h3>Por proveedor</h3>
             <table class="table" id="usage-providers"></table>
           </article>
           <article class="card">
-            <h3>By Model</h3>
+            <h3>Por modelo</h3>
             <table class="table" id="usage-models"></table>
           </article>
           <article class="card">
-            <h3>By Tool</h3>
+            <h3>Por herramienta</h3>
             <table class="table" id="usage-tools"></table>
           </article>
         </div>
@@ -343,8 +341,10 @@
 
       <section class="page" id="page-timeline">
         <div class="toolbar">
-          <h2>Event Timeline</h2>
-          <button class="btn" id="refresh-events" aria-label="Actualizar eventos">Refresh</button>
+          <h2>Línea de tiempo</h2>
+          <button class="btn" id="refresh-events" aria-label="Actualizar eventos">
+            Actualizar
+          </button>
         </div>
         <div class="card">
           <div id="timeline-list"></div>
@@ -354,21 +354,24 @@
       <section class="page" id="page-logs">
         <div class="toolbar">
           <div>
-            <h2>Live Logs</h2>
+            <h2>Logs en vivo</h2>
             <p class="muted">Stream en tiempo real desde gateway y agentes.</p>
           </div>
-          <div class="inline">
+          <div class="inline wrap">
             <input
               type="search"
               id="log-filter"
-              placeholder="Filtrar..."
+              placeholder="Filtrar por palabra clave..."
               aria-label="Filtrar logs"
             />
             <button class="btn secondary" id="toggle-scroll" aria-label="Pausar o reanudar scroll">
-              Pause
+              Pausar
             </button>
             <button class="btn secondary" id="download-logs" aria-label="Descargar logs">
-              Download
+              Descargar
+            </button>
+            <button class="btn ghost" id="clear-logs" aria-label="Limpiar vista de logs">
+              Limpiar vista
             </button>
           </div>
         </div>
@@ -377,11 +380,11 @@
 
       <section class="page" id="page-settings">
         <div class="toolbar">
-          <h2>Settings</h2>
+          <h2>Ajustes</h2>
         </div>
         <div class="grid-2">
           <article class="card">
-            <h3>Refresh Rate</h3>
+            <h3>Refresh rate</h3>
             <div class="inline">
               <div class="knob" aria-hidden="true"></div>
               <input type="range" id="refresh-rate" min="800" max="8000" step="200" value="1500" />
@@ -389,14 +392,14 @@
             </div>
           </article>
           <article class="card">
-            <h3>Remote Profiles</h3>
+            <h3>Perfiles remotos</h3>
             <p class="muted">Requiere opt-in explícito en config.json + confirmación en UI.</p>
             <span class="badge" id="remote-status">disabled</span>
           </article>
         </div>
       </section>
 
-      <footer>ClawDesk v2.0.0 · Security-first loopback dashboard.</footer>
+      <footer>ClawDesk v2.0.0 · Dashboard loopback-only · Security-first.</footer>
     </div>
 
     <div class="modal" id="guide-modal" aria-hidden="true">

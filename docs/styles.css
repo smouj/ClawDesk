@@ -36,6 +36,12 @@
   font-weight: 600;
 }
 
+.titlebar small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .tabstrip {
   display: flex;
   gap: 8px;
@@ -58,6 +64,20 @@
   border-color: var(--line);
   color: var(--text);
   background: rgba(34, 211, 238, 0.12);
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: rgba(15, 23, 42, 0.72);
+}
+
+.badge.ok {
+  color: var(--lime);
+  border-color: rgba(110, 231, 183, 0.5);
 }
 
 .card {
@@ -101,6 +121,12 @@
   cursor: pointer;
   font-weight: 600;
   text-decoration: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
 }
 
 .btn:focus-visible {
@@ -160,4 +186,36 @@ footer {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+pre {
+  margin: 12px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(5, 8, 15, 0.98);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+  color: var(--text);
+  overflow-x: auto;
+}
+
+.hero {
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.screenshot {
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  border-radius: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  background: rgba(9, 12, 20, 0.7);
 }

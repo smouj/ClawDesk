@@ -13,6 +13,7 @@ const { createCorsAllowlist } = require("./security/cors");
 const { createAuth } = require("./security/auth");
 const { redactText } = require("./security/redaction");
 const { createEventLogger } = require("./events/log");
+const { createLogger } = require("./utils/logger");
 const { createHealthRouter } = require("./routes/health");
 const { createProfilesRouter } = require("./routes/profiles");
 const { createGatewayRouter } = require("./routes/gateway");
@@ -46,6 +47,7 @@ const createServer = () => {
 
   const getSecrets = (profile) => [profile?.token, secret, process.env.OPENCLAW_GATEWAY_TOKEN];
 
+  const logger = createLogger(getSecrets(getProfile()));
   const logEvent = createEventLogger({ filePath: EVENTS_PATH, secrets: getSecrets(getProfile()) });
 
   app.disable("x-powered-by");
@@ -180,6 +182,7 @@ const createServer = () => {
   app.use((err, req, res, next) => {
     const redacted = redactText(err.message, getSecrets(getProfile()));
     fs.appendFileSync(LOG_PATH, `${new Date().toISOString()} ${redacted}\n`);
+    logger.error("Error no controlado", { error: err.message, path: req.path });
     res.status(500).json({ error: "Error interno" });
     next();
   });

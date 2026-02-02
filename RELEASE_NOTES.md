@@ -1,31 +1,30 @@
 # Release Notes
 
-## v2.0.0 — Production-ready
+## v2.1.0 — Mission Control Pro
 
 ### Highlights
 
-- ✅ CI hardened with lint, format, tests, and a real smoke health check.
-- ✅ Release automation publishes tarball + SHA256SUMS on tag.
-- ✅ Install script now auto-detects the latest stable release to avoid 404s.
+- ✅ Instalador local más robusto: bind seguro, defaults claros y self-test automático.
+- ✅ Instalador remoto auto-latest con verificación SHA256.
+- ✅ /api/health más completo (openclaw detectado, reachability, latencia).
 
 ### UX/UI
 
-- Unified retro tokens and stronger contrast for panels, buttons, and toasts.
-- Keyboard navigation in main tabs + clearer focus states.
-- Toast queueing to avoid notification spam.
+- Mission Control con acciones rápidas y estado del gateway en tiempo real.
+- Logs con filtros más accesibles, pausa y descarga.
+- Textos en español más consistentes y profesionales.
 
-### Security & Reliability
+### Seguridad & Reliability
 
-- Expanded log redaction for bearer tokens and API keys.
-- Strict CORS allowlist for loopback origins by default.
-- Config validation tightened with clearer errors.
+- Confirmación doble para binds no-loopback.
+- Redacción estructurada de logs y mejoras de timeouts.
 
-### Installation
+### Instalación
 
-- Stable installs default to the latest release.
-- Nightly installs continue to track `main`.
+- Soporte de modo no interactivo con variables de entorno.
+- WSL detectado con recomendaciones de localhost compartido.
 
 ### Developer Experience
 
-- `format:write` script added for Prettier fixes.
-- Smoke test uses a random local port for reliability.
+- Script `dev` agregado en package.json.
+- CONTRIBUTING.md y SECURITY.md añadidos.

@@ -3,41 +3,111 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawDesk · Instalación</title>
+    <title>ClawDesk · Mission Control local</title>
     <link rel="icon" href="assets/brand/logo-brain.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="simple">
-      <header>
-        <h1>ClawDesk</h1>
-        <p class="muted">Instalación oficial (git clone + install.sh)</p>
+    <div class="window">
+      <header class="titlebar">
+        <div class="brand">
+          <img src="assets/brand/logo-brain.svg" alt="ClawDesk" />
+          <div>
+            <h1>ClawDesk</h1>
+            <small>Mission Control · Security-first · Loopback-only</small>
+          </div>
+        </div>
+        <span class="badge">v2.x</span>
       </header>
 
-      <section class="card">
-        <h2>1) Clonar el repositorio</h2>
-        <pre><code>git clone https://github.com/smouj/ClawDesk.git
-cd ClawDesk</code></pre>
-      </section>
-
-      <section class="card">
-        <h2>2) Ejecutar el instalador</h2>
-        <pre><code>bash install.sh</code></pre>
+      <section class="section hero">
+        <h2>Dashboard local para operar OpenClaw con seguridad pro.</h2>
         <p class="muted">
-          El instalador detecta dependencias, configura OpenClaw y crea el comando
-          <strong>clawdesk</strong>.
+          ClawDesk centraliza estado, logs y acciones del gateway en una interfaz moderna sin
+          exponer tu máquina al exterior.
         </p>
+        <div class="inline">
+          <a class="btn" href="#quickstart">Instalar ahora</a>
+          <a class="btn ghost" href="#seguridad">Ver seguridad</a>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>3) Comandos útiles</h2>
+      <section class="section" id="quickstart">
+        <h3>Quickstart</h3>
+        <div class="grid-2">
+          <div class="card">
+            <h4>One-liner remoto (stable)</h4>
+            <pre><code>curl -fsSL https://raw.githubusercontent.com/smouj/ClawDesk/main/scripts/install-remote.sh | bash</code></pre>
+            <p class="muted">Instala la última release estable con verificación SHA256.</p>
+          </div>
+          <div class="card">
+            <h4>Git clone + install.sh</h4>
+            <pre><code>git clone https://github.com/smouj/ClawDesk.git
+cd ClawDesk
+bash install.sh</code></pre>
+            <p class="muted">Ideal para contribuir o personalizar la instalación.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Características clave</h3>
+        <div class="grid-3">
+          <div class="card">
+            <h4>Mission Control</h4>
+            <p class="muted">Estado del gateway, latencia, token detectado y última actividad.</p>
+          </div>
+          <div class="card">
+            <h4>Acciones rápidas</h4>
+            <p class="muted">Start/Stop/Restart con políticas de allow-actions.</p>
+          </div>
+          <div class="card">
+            <h4>Logs pro</h4>
+            <p class="muted">Filtro, pausa, descarga y jerarquía visual clara.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="seguridad">
+        <div class="card">
+          <h3>Seguridad</h3>
+          <p class="muted">
+            ClawDesk escucha en loopback. El acceso remoto debe hacerse por túneles cifrados
+            (Tailscale, WireGuard o SSH). Se bloquea 0.0.0.0 por defecto.
+          </p>
+          <div class="inline">
+            <span class="badge ok">Loopback-only</span>
+            <span class="badge">CORS allowlist</span>
+            <span class="badge">Rate limit local</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h3>Comandos esenciales</h3>
         <pre><code>clawdesk run
 clawdesk status
 clawdesk doctor
 clawdesk open</code></pre>
       </section>
 
-      <footer class="muted">ClawDesk · instalación local · loopback only</footer>
-    </main>
+      <section class="section">
+        <h3>WSL / Windows</h3>
+        <p class="muted">
+          En WSL, <code>localhost</code> se comparte con Windows. Abre el dashboard desde Windows en
+          <code>http://127.0.0.1:4178</code>.
+        </p>
+      </section>
+
+      <section class="section">
+        <h3>Capturas (placeholder)</h3>
+        <div class="grid-2">
+          <div class="screenshot">Dashboard principal</div>
+          <div class="screenshot">Logs en vivo</div>
+        </div>
+      </section>
+
+      <footer>ClawDesk · documentación oficial · security-first</footer>
+    </div>
   </body>
 </html>
